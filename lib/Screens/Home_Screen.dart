@@ -6,7 +6,6 @@ import 'package:gtext/gtext.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:yugtalk/Widgets/Drawer_Widget.dart';
 import '../Modules/Activity Mode/ActivityMode_Mod.dart';
-import '../Modules/Activity Mode/Statistics/Stats_Mod.dart';
 import '../Modules/Activity Mode/Statistics/WordUsage.dart';
 import 'MeMode_Screen.dart';
 import 'EditMode_Screen.dart';
@@ -136,7 +135,7 @@ class _Home_ModState extends State<Home_Mod>
           break;
         case 1:
           // Edit Mode - Both SLPs and guardians can access
-          Navigator.pushReplacement(
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => EditMode(userID: userID)),
           );

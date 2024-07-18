@@ -1,28 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:gtext/gtext.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final customPurple = isDarkMode ? Colors.deepPurple[200]! : Colors.deepPurple;
+    final backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.deepPurple[50]!;
+    final gradientEndColor = isDarkMode ? Colors.grey[800]! : Colors.deepPurple[100]!;
+
     return Scaffold(
       appBar: AppBar(
         title: const GText('Our Team'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: customPurple,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.deepPurple[50]!, Colors.deepPurple[100]!],
+            colors: [backgroundColor, gradientEndColor],
           ),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24.0),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
               GText(
@@ -30,12 +35,12 @@ class AboutUsScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: customPurple,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 32),
-              Expanded(
+              const SizedBox(height: 32),
+              const Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -44,7 +49,7 @@ class AboutUsScreen extends StatelessWidget {
                       name: 'Lex Anilov T. Ogaya',
                       role: 'Backend Developer and Researcher',
                       bio:
-                          "I'm an aspiring app developer and this thesis will be my last, greatest test to see if I'm worthy of being one.",
+                          "I'm an aspiring app developer and YugTalk will be my last, greatest test to see if I'm worthy of being one.",
                       imagePath: 'assets/images/lex_image.jpg',
                       socialLinks: [
                         {
@@ -63,7 +68,7 @@ class AboutUsScreen extends StatelessWidget {
                       name: 'Charles Ian S. Monteloyola',
                       role: 'Frontend Developer and Researcher',
                       bio:
-                          "A future app developer with specialty in UX/UI design, YugTalk is one of my team's greatest projects.",
+                          "A future app developer with specialty in UI/UX design, YugTalk is one of my team's greatest projects.",
                       imagePath: 'assets/images/charles_image.jpg',
                       socialLinks: [
                         {
@@ -91,7 +96,7 @@ class AboutUsScreen extends StatelessWidget {
                       name: 'David Anton C. Alvarez',
                       role: 'Frontend and Backend Developer and Researcher',
                       bio:
-                          "6ft1' Filipino Aspiring to be a Cybersecurity SOC Analyst.",
+                          "6 ft 1' Filipino Aspiring to be a Cybersecurity SOC Analyst.",
                       imagePath: 'assets/images/david_image.jpg',
                       socialLinks: [
                         {
@@ -138,96 +143,92 @@ class DeveloperCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final customPurple = isDarkMode ? Colors.deepPurple[200]! : Colors.deepPurple;
+    final cardColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.deepPurple[50]!],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.deepPurple, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.deepPurple.withOpacity(0.5),
-                      spreadRadius: 5,
-                      blurRadius: 7,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundImage: AssetImage(imagePath),
-                ),
+      color: cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: customPurple, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: customPurple.withOpacity(0.5),
+                    spreadRadius: 5,
+                    blurRadius: 7,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              GText(
-                name,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+              child: CircleAvatar(
+                radius: 70,
+                backgroundImage: AssetImage(imagePath),
+              ),
+            ),
+            const SizedBox(height: 24),
+            GText(
+              name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: customPurple,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: customPurple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: GText(
+                role,
+                style: TextStyle(
+                  color: customPurple,
+                  fontStyle: FontStyle.italic,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
                 child: GText(
-                  role,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.deepPurple[700],
-                    fontStyle: FontStyle.italic,
-                  ),
+                  bio,
                   textAlign: TextAlign.center,
+                  style: TextStyle(color: textColor),
                 ),
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: GText(
-                    bio,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: socialLinks
-                    .map(
-                        (link) => _buildSocialIcon(link['icon']!, link['url']!))
-                    .toList(),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: socialLinks
+                  .map((link) => _buildSocialIcon(context, link['icon']!, link['url']!))
+                  .toList(),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSocialIcon(String iconPath, String url) {
+  Widget _buildSocialIcon(BuildContext context, String iconPath, String url) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final iconBackgroundColor = isDarkMode ? Colors.grey[700]! : Colors.white;
+    final shadowColor = isDarkMode ? Colors.black26 : Colors.deepPurple.withOpacity(0.3);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: InkWell(
@@ -248,10 +249,10 @@ class DeveloperCard extends StatelessWidget {
                 height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: iconBackgroundColor,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.deepPurple.withOpacity(0.3),
+                      color: shadowColor,
                       spreadRadius: 2,
                       blurRadius: 4,
                       offset: const Offset(0, 2),
@@ -281,8 +282,8 @@ class DeveloperCard extends StatelessWidget {
   }
 
   void _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+    if (await canLaunchUrlString(url)) {
+      await launchUrlString(url);
     } else {
       print('Could not launch $url');
     }

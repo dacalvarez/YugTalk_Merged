@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +29,7 @@ class _AccountScreenState extends State<AccountScreen> {
   String _originalGuardianName = '';
   String _originalGuardianPhone = '';
   bool _isEditing = false;
+  bool isMounted = true;
 
   @override
   void initState() {
@@ -44,6 +44,7 @@ class _AccountScreenState extends State<AccountScreen> {
     _ageController.dispose();
     _guardianNameController.dispose();
     _guardianPhoneController.dispose();
+    isMounted = false;
     super.dispose();
   }
 
@@ -152,6 +153,8 @@ class _AccountScreenState extends State<AccountScreen> {
     if (!kIsWeb) {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
+        _showLoadingDialog(); // Show loading dialog
+
         final bytes = await File(pickedFile.path).readAsBytes();
 
         final compressedBytes = await FlutterImageCompress.compressWithList(
@@ -168,6 +171,7 @@ class _AccountScreenState extends State<AccountScreen> {
           await userSnapshot.docs.first.reference.update({
             'profilePicture': imageData,
           }).then((value) {
+            Navigator.pop(context); // Close loading dialog
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: GText('Profile picture updated successfully.'),
@@ -176,6 +180,7 @@ class _AccountScreenState extends State<AccountScreen> {
             );
             setState(() {});
           }).catchError((error) {
+            Navigator.pop(context); // Close loading dialog
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: GText('Failed to update profile picture: $error'),
@@ -196,6 +201,8 @@ class _AccountScreenState extends State<AccountScreen> {
           final reader = html.FileReader();
 
           reader.onLoadEnd.listen((e) async {
+            _showLoadingDialog(); // Show loading dialog
+
             final bytes = Uint8List.fromList(reader.result as List<int>);
 
             final compressedBytes = await FlutterImageCompress.compressWithList(
@@ -212,6 +219,7 @@ class _AccountScreenState extends State<AccountScreen> {
               await userSnapshot.docs.first.reference.update({
                 'profilePicture': imageData,
               }).then((value) {
+                Navigator.pop(context); // Close loading dialog
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: GText('Profile picture updated successfully.'),
@@ -220,6 +228,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 );
                 setState(() {});
               }).catchError((error) {
+                Navigator.pop(context); // Close loading dialog
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: GText('Failed to update profile picture: $error'),
@@ -237,6 +246,8 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _captureImage() async {
+    if (!mounted) return;
+
     try {
       if (cameras.isEmpty) {
         cameras = await availableCameras();
@@ -251,10 +262,14 @@ class _AccountScreenState extends State<AccountScreen> {
 
       await controller.initialize();
 
+      if (!mounted) return;
+
+      final BuildContext dialogContext = context;
+
       showDialog(
-        context: context,
+        context: dialogContext,
         builder: (BuildContext context) => AlertDialog(
-          title: GText("Capture Image"),
+          title: const GText("Capture Image"),
           content: AspectRatio(
             aspectRatio: controller.value.aspectRatio,
             child: CameraPreview(controller),
@@ -264,6 +279,24 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: () async {
                 try {
                   final XFile imageFile = await controller.takePicture();
+                  if (!mounted) return;
+                  Navigator.of(dialogContext).pop(); // Close the camera preview dialog
+
+                  showDialog(
+                    context: dialogContext,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) => const AlertDialog(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          GText("Processing image..."),
+                        ],
+                      ),
+                    ),
+                  );
+
                   final bytes = await File(imageFile.path).readAsBytes();
 
                   final compressedBytes = await FlutterImageCompress.compressWithList(
@@ -273,14 +306,16 @@ class _AccountScreenState extends State<AccountScreen> {
                     quality: 80,
                   );
 
+                  if (!mounted) return;
+
                   if (compressedBytes.length > 1048576) {
-                    scaffoldMessengerKey.currentState?.showSnackBar(
+                    Navigator.of(dialogContext).pop(); // Close loading dialog
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
                       const SnackBar(
                         content: GText('The picture is too big. Please choose a smaller image.'),
                         duration: Duration(seconds: 3),
                       ),
                     );
-                    Navigator.pop(context);
                     return;
                   }
 
@@ -290,47 +325,49 @@ class _AccountScreenState extends State<AccountScreen> {
                     querySnapshot.docs.first.reference.update({
                       'profilePicture': imageData,
                     }).then((_) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      if (!mounted) return;
+                      Navigator.of(dialogContext).pop(); // Close loading dialog
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
                         const SnackBar(
                           content: GText('Profile picture updated successfully.'),
                           duration: Duration(seconds: 3),
                         ),
                       );
                       setState(() {});
-                      Navigator.pop(context);
                     }).catchError((error) {
-                      // Show error message
-                      scaffoldMessengerKey.currentState?.showSnackBar(
+                      if (!mounted) return;
+                      Navigator.of(dialogContext).pop(); // Close loading dialog
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
                         SnackBar(
                           content: GText('Failed to update profile picture: $error'),
-                          duration: Duration(seconds: 3),
+                          duration: const Duration(seconds: 3),
                         ),
                       );
-                      Navigator.pop(context);
                     });
                   });
                 } catch (e) {
-                  scaffoldMessengerKey.currentState?.showSnackBar(
+                  if (!mounted) return;
+                  Navigator.of(dialogContext).pop(); // Close loading dialog
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
                       content: GText("Error capturing image: $e"),
                     ),
                   );
-                  Navigator.pop(context);
                 }
               },
-              child: GText("Capture"),
+              child: const GText("Capture"),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.of(dialogContext).pop();
               },
-              child: GText("Cancel"),
+              child: const GText("Cancel"),
             ),
           ],
         ),
       );
     } catch (e) {
-      // Show error message
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: GText("Error initializing camera: $e"),
@@ -416,6 +453,25 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              GText("Processing image..."),
+            ],
+          ),
+        );
+      },
     );
   }
 
