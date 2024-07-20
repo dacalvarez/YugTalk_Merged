@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image/image.dart' as img;
 import 'package:flutter_svg/flutter_svg.dart';
-
-import 'SearchSymbol_Mod.dart'; // Import the SearchSymbol component
+import 'SearchSymbol_Mod.dart';
 
 class AddEditImage extends StatefulWidget {
   final String wordImage;
@@ -78,19 +78,19 @@ class _AddEditImageState extends State<AddEditImage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm'),
-        content: const Text('Do you want to delete the selected image?'),
+        title: GText('Confirm'),
+        content: GText('Do you want to delete the selected image?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
+            child: GText('No'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _clearImage();
             },
-            child: const Text('Yes'),
+            child: GText('Yes'),
           ),
         ],
       ),
@@ -108,12 +108,12 @@ class _AddEditImageState extends State<AddEditImage> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Confirm'),
-          content: const Text('Do you want to discard the selected image?'),
+          title: GText('Confirm'),
+          content: GText('Do you want to discard the selected image?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('No'),
+              child: GText('No'),
             ),
             TextButton(
               onPressed: () {
@@ -121,7 +121,7 @@ class _AddEditImageState extends State<AddEditImage> {
                 _clearImage();
                 Navigator.pop(context); // Close the Select Symbol dialog
               },
-              child: const Text('Yes'),
+              child: GText('Yes'),
             ),
           ],
         ),
@@ -152,12 +152,12 @@ class _AddEditImageState extends State<AddEditImage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        title: GText('Error'),
+        content: GText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: GText('OK'),
           ),
         ],
       ),
@@ -166,10 +166,9 @@ class _AddEditImageState extends State<AddEditImage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
       child: AlertDialog(
-        title: const Text('Select Symbol'),
+        title: GText('Select Symbol'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -179,7 +178,7 @@ class _AddEditImageState extends State<AddEditImage> {
                 width: 200,
                 color: Colors.grey[500],
                 child: _currentImage.isEmpty
-                    ? const Center(child: Text('No symbol selected'))
+                    ? const Center(child: GText('No symbol selected'))
                     : _buildImageContainer(),
               ),
               const SizedBox(height: 16),
@@ -196,7 +195,7 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Search'),
+                      child: GText('Search'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -210,7 +209,7 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Camera'),
+                      child: GText('Camera'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -224,7 +223,7 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Gallery'),
+                      child: GText('Gallery'),
                     ),
                   ),
                 ],
@@ -244,7 +243,7 @@ class _AddEditImageState extends State<AddEditImage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('Delete'),
+                        child: GText('Delete'),
                       ),
                     ),
                   ],
@@ -256,11 +255,11 @@ class _AddEditImageState extends State<AddEditImage> {
         actions: [
           TextButton(
             onPressed: _confirmClearImage,
-            child: const Text('Cancel'),
+            child: GText('Cancel'),
           ),
           TextButton(
             onPressed: _saveImage,
-            child: const Text('Save'),
+            child: GText('Save'),
           ),
         ],
       ),
@@ -269,7 +268,7 @@ class _AddEditImageState extends State<AddEditImage> {
 
   Widget _buildImageContainer() {
     if (_currentImage.isEmpty) {
-      return const Center(child: Text('No symbol selected'));
+      return const Center(child: GText('No symbol selected'));
     }
 
     final isSvg = _currentImage.toLowerCase().endsWith('.svg');

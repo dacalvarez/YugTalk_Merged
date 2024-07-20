@@ -789,6 +789,8 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: GText('Set ${widget.locationType} Location'),
@@ -837,19 +839,22 @@ class _MapScreenState extends State<MapScreen> {
               top: 0,
               left: 0,
               right: 0,
-              child: Container(
-                color: Colors.white,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '     Search for a location',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: _performSearch,
-                    ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: '     Search for a location',
+                  hintStyle: TextStyle(
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   ),
-                  onSubmitted: (_) => _performSearch(),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                    onPressed: _performSearch,
+                  ),
+                  filled: true,
+                  fillColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
                 ),
+                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                onSubmitted: (_) => _performSearch(),
               ),
             ),
             Positioned(
@@ -858,6 +863,10 @@ class _MapScreenState extends State<MapScreen> {
               right: 200,
               child: ElevatedButton(
                 onPressed: _saveLocation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
                 child: GText('Save Location'),
               ),
             ),

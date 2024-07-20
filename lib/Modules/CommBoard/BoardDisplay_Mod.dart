@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:gtext/gtext.dart';
 import 'package:just_audio/just_audio.dart';
 import '../PopupForm/PopupForm_Mod.dart';
 import 'package:translator/translator.dart';
@@ -11,7 +12,7 @@ class BoardDisplay_Mod extends StatefulWidget {
   final String boardID;
   final Function(Map<String, String>) onSymbolSelected;
   final List<Map<String, String>> selectedSymbols;
-  final String language; // 'Filipino' or 'English'
+  final String language;
   final bool incrementUsageCount;
   final bool translate;
 
@@ -51,7 +52,9 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
 
   @override
   void dispose() {
+    flutterTts.stop();
     audioPlayer.dispose();
+    speechQueue.clear();
     super.dispose();
   }
 
@@ -61,17 +64,22 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         String nextPhrase = speechQueue.removeFirst();
         await flutterTts.speak(nextPhrase);
       } else {
+        if (mounted) {
+          setState(() {
+            isSpeakingOrPlaying = false;
+          });
+        }
+      }
+    });
+
+    flutterTts.setErrorHandler((msg) {
+      if (mounted) {
         setState(() {
           isSpeakingOrPlaying = false;
         });
       }
     });
 
-    flutterTts.setErrorHandler((msg) {
-      setState(() {
-        isSpeakingOrPlaying = false;
-      });
-    });
 
     flutterTts.setSpeechRate(0.75);
     flutterTts.setPitch(1.2);
@@ -109,10 +117,12 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
 
       if (boardSnapshot.exists) {
         var boardData = boardSnapshot.data() as Map<String, dynamic>;
-        setState(() {
-          rows = boardData['rows'];
-          columns = boardData['columns'];
-        });
+        if (mounted) {
+          setState(() {
+            rows = boardData['rows'];
+            columns = boardData['columns'];
+          });
+        }
         _fetchSymbols();
       } else {
         setDefaultDimensions();
@@ -123,11 +133,13 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   }
 
   void setDefaultDimensions() {
-    setState(() {
-      rows = 3;
-      columns = 5;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        rows = 3;
+        columns = 5;
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchSymbols() async {
@@ -153,16 +165,21 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         }
       }
 
-      setState(() {
-        symbols = fetchedSymbols;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          symbols = fetchedSymbols;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
+
 
   Future<void> _incrementUsageCount(String boardID, String symbolID) async {
     if (!widget.incrementUsageCount) return;
@@ -185,35 +202,40 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   Future<String> _translateText(String text) async {
     try {
       if (widget.language == 'Filipino') {
-        var translation = await translator.translate(text, from: 'fil', to: 'en');
+        var translation = await translator.translate(text, from: 'tl', to: 'en');
         return translation.text;
       } else {
-        var translation = await translator.translate(text, from: 'en', to: 'fil');
+        var translation = await translator.translate(text, from: 'en', to: 'tl');
         return translation.text;
       }
     } catch (e) {
       throw Exception('Translation failed: $e');
     }
   }
-
   void _playAudio(String url) async {
     try {
-      setState(() {
-        isSpeakingOrPlaying = true;
-      });
+      if (mounted) {
+        setState(() {
+          isSpeakingOrPlaying = true;
+        });
+      }
       await audioPlayer.setUrl(url);
       await audioPlayer.play();
       audioPlayer.playerStateStream.listen((state) {
         if (state.processingState == ProcessingState.completed) {
-          setState(() {
-            isSpeakingOrPlaying = false;
-          });
+          if (mounted) {
+            setState(() {
+              isSpeakingOrPlaying = false;
+            });
+          }
         }
       });
     } catch (e) {
-      setState(() {
-        isSpeakingOrPlaying = false;
-      });
+      if (mounted) {
+        setState(() {
+          isSpeakingOrPlaying = false;
+        });
+      }
     }
   }
 
@@ -221,9 +243,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
     if (isSpeakingOrPlaying) {
       speechQueue.add(text);
     } else {
-      setState(() {
-        isSpeakingOrPlaying = true;
-      });
+      if (mounted) {
+        setState(() {
+          isSpeakingOrPlaying = true;
+        });
+      }
       await flutterTts.speak(text);
     }
   }
@@ -241,7 +265,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
 
   void _handleTap(Map<String, dynamic> symbol) async {
     DateTime now = DateTime.now();
-    if (lastTapTime != null && now.difference(lastTapTime!).inMilliseconds < 1000) {
+    if (lastTapTime != null && now.difference(lastTapTime!).inMilliseconds < 1) {
       _showSnackBar("You're tapping too fast! Slow down!");
       return;
     }
@@ -288,9 +312,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   void didUpdateWidget(covariant BoardDisplay_Mod oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.translate != widget.translate) {
-      setState(() {
-        isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = true;
+        });
+      }
       _fetchSymbols();
       _setTtsVoice();
     }
@@ -298,6 +324,8 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -308,10 +336,13 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(
+          child: GText(
             'No symbols found. To add symbols, go to edit mode.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+            style: TextStyle(
+              //fontSize: 18,
+              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+            ),
           ),
         ),
       );
@@ -339,7 +370,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
             height: containerHeight,
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: isDarkMode ? Colors.grey[900] : Colors.grey[300],
               borderRadius: BorderRadius.circular(10),
             ),
             child: GridView.builder(
@@ -365,11 +396,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
                     width: cellSize,
                     height: cellSize,
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: DragTarget<String>(
-                      onAccept: (receivedID) {
+                      onAcceptWithDetails: (receivedID) {
                         // Handle symbol drag and drop if needed
                       },
                       builder: (context, candidateData, rejectedData) {
@@ -391,6 +422,8 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   }
 
   Widget _buildSymbolContainer(Map<String, dynamic> data, double cellSize) {
+    final textTheme = Theme.of(context).textTheme;
+
     return SizedBox(
       width: cellSize,
       height: cellSize,
@@ -398,7 +431,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         builder: (context, constraints) {
           bool showImageOnly = constraints.maxHeight < 100;
           double imageSize = showImageOnly ? constraints.maxHeight * 0.7 : constraints.maxHeight * 0.5;
-          double fontSize = showImageOnly ? 0 : 18;
+          double? fontSize = showImageOnly ? 0 : textTheme.bodyMedium?.fontSize;
           String wordName = widget.translate ? data['translatedWordName'] ?? data['wordName'] ?? '' : data['wordName'] ?? '';
 
           return Card(
@@ -450,7 +483,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         children: [
           Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3),
           if (maxHeight > 100)
-            const Text(
+            const GText(
               'Error',
               style: TextStyle(color: Colors.red),
             ),
@@ -473,7 +506,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
           children: [
             Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3),
             if (maxHeight > 100)
-              const Text(
+              const GText(
                 'Error',
                 style: TextStyle(color: Colors.red),
               ),
@@ -491,7 +524,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
             children: [
               Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3),
               if (maxHeight > 100)
-                const Text(
+                const GText(
                   'Error',
                   style: TextStyle(color: Colors.red),
                 ),
@@ -532,7 +565,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: GText(message),
       ),
     );
   }

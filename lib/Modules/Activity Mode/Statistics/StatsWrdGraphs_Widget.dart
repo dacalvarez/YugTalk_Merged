@@ -90,7 +90,7 @@ class _StatsWrdGraphs_WidgetState extends State<StatsWrdGraphs_Widget> {
                     items: [
                       const DropdownMenuItem<String>(
                         value: null,
-                        child: GText('Select a Category'),
+                        child: GText('Category'),
                       ),
                       ...widget.wordUsages
                           .expand((wordUsage) => [wordUsage.category])
@@ -113,16 +113,16 @@ class _StatsWrdGraphs_WidgetState extends State<StatsWrdGraphs_Widget> {
                         onPressed: () => _selectStartDate(context),
                         child: GText(_selectedStartDate != null
                             ? 'Start Date: ${_selectedStartDate!.toString().split(' ')[0]}'
-                            : 'Select Start Date'),
+                            : 'Start Date'),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       ElevatedButton(
                         onPressed: () => _selectEndDate(context),
                         child: GText(_selectedEndDate != null
                             ? 'End Date: ${_selectedEndDate!.toString().split(' ')[0]}'
-                            : 'Select End Date'),
+                            : 'End Date'),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       IconButton(
                         icon: const Icon(Icons.refresh),
                         onPressed: () => _resetSelections(),
@@ -135,9 +135,9 @@ class _StatsWrdGraphs_WidgetState extends State<StatsWrdGraphs_Widget> {
                   child: Row(
                     children: [
                       _buildFilterButton(Location.Home),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       _buildFilterButton(Location.School),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       _buildFilterButton(Location.Clinic),
                     ],
                   ),

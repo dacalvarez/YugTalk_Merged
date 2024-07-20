@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 import '../Modules/CommBoard/CommBoard_Mod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Modules/CommBoard/MoreOptions_Mod.dart';
@@ -56,7 +57,7 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
         isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching board name: $e')),
+        SnackBar(content: GText('Error fetching board name: $e')),
       );
     }
   }
@@ -68,12 +69,12 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
       builder: (context) {
         final TextEditingController answerController = TextEditingController();
         return AlertDialog(
-          title: const Text('Solve the Puzzle'),
+          title: GText('Solve the Puzzle'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 20),
-              Text(puzzleQuestion),
+              GText(puzzleQuestion),
               const SizedBox(height: 20),
               TextField(
                 controller: answerController,
@@ -88,7 +89,7 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog when Cancel is pressed
               },
-              child: const Text('Cancel'),
+              child: GText('Cancel'),
             ),
             TextButton(
               onPressed: () {
@@ -96,15 +97,15 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
                   Navigator.of(context).pop();
                   onSuccess();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Puzzle solved successfully!')),
+                    const SnackBar(content: GText('Puzzle solved successfully!')),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Incorrect answer, please try again.')),
+                    const SnackBar(content: GText('Incorrect answer, please try again.')),
                   );
                 }
               },
-              child: const Text('Submit'),
+              child: GText('Submit'),
             ),
           ],
         );
@@ -129,12 +130,12 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No changes were made.')),
+            const SnackBar(content: GText('No changes were made.')),
           );
         }
       }).catchError((e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error displaying options: $e')),
+          SnackBar(content: GText('Error displaying options: $e')),
         );
       });
     });
@@ -145,7 +146,7 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Loading...'),
+          title: GText('Loading...'),
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -158,7 +159,7 @@ class _LinkedBoardDisplayState extends State<LinkedBoardDisplay> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(boardName ?? 'Linked Board'),
+        title: GText(boardName ?? 'Linked Board'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

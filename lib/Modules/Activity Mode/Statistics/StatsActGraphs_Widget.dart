@@ -570,7 +570,7 @@ class _StatsActGraphs_WidgetState extends State<StatsActGraphs_Widget> {
               ),
               actions: [
                 TextButton(
-                  child: const GText('Close'),
+                  child: GText('Exit'),
                   onPressed: () {
                     Navigator.of(context).pop();
                     setState(() {

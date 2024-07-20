@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gtext/gtext.dart';
 import '/Screens/EditSymbol_Screen.dart';
 
 class EditBoard_Mod extends StatefulWidget {
@@ -77,9 +78,9 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error loading symbols: ${snapshot.error}'));
+          return Center(child: GText('Error loading symbols: ${snapshot.error}'));
         } else if (rows == null || columns == null) {
-          return Center(child: Text('Loading board details...'));
+          return Center(child: GText('Loading board details...'));
         } else {
           final symbols = snapshot.data ?? [];
           final totalCells = rows! * columns!;
@@ -96,8 +97,8 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
               double maxContainerHeight = constraints.maxHeight;
               double cellSize = ((maxContainerWidth - (columns! - 1) * 8.0 - 10) / columns!).clamp(0.0, (maxContainerHeight - (rows! - 1) * 8.0 - 10) / rows!).toDouble();
 
-              double containerWidth = cellSize * columns! + (columns! - 1) * 8.0 + 10; // Adjusted padding
-              double containerHeight = cellSize * rows! + (rows! - 1) * 8.0 + 10; // Adjusted padding
+              double containerWidth = cellSize * columns! + (columns! - 1) * 8.0 + 10;
+              double containerHeight = cellSize * rows! + (rows! - 1) * 8.0 + 10;
 
               return Center(
                 child: Container(
@@ -184,7 +185,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Text(
+                          child: GText(
                             data['wordName'] ?? '',
                             style: TextStyle(fontSize: fontSize),
                             textAlign: TextAlign.center,
@@ -245,9 +246,9 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3), // Adapt size to container
+        Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3),
         if (maxHeight > 100)
-          const Text(
+          const GText(
             'Error',
             style: TextStyle(color: Colors.red),
           ),
@@ -278,7 +279,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
       case 'conjunctions':
         return const Color(0xffffffff);
       default:
-        return const Color.fromARGB(255, 238, 238, 238); // Default color for unknown categories
+        return const Color.fromARGB(255, 238, 238, 238);
     }
   }
 }

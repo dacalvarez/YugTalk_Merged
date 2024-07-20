@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:gtext/gtext.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -141,7 +142,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
   void showWarningSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: GText(message),
       ),
     );
   }
@@ -151,7 +152,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Symbol'),
+          title: GText('Confirm Symbol'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -163,7 +164,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: GText('Cancel'),
             ),
             TextButton(
               onPressed: () {
@@ -171,7 +172,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
                 Navigator.of(context).pop();
                 //Navigator.of(context).pop(); // Close the search dialog
               },
-              child: const Text('Confirm'),
+              child: GText('Confirm'),
             ),
           ],
         );
@@ -193,6 +194,8 @@ class _SearchSymbolState extends State<SearchSymbol> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20.0),
@@ -214,9 +217,9 @@ class _SearchSymbolState extends State<SearchSymbol> {
                 ),
                 const Expanded(
                   child: Center(
-                    child: Text(
+                    child: GText(
                       'Search Symbol',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -226,7 +229,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
             const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? Colors.grey[900] : Colors.white,
                 borderRadius: BorderRadius.circular(10.0),
                 border: Border.all(color: Colors.black, width: 2),
               ),
@@ -236,7 +239,6 @@ class _SearchSymbolState extends State<SearchSymbol> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Search image',
-                  hintStyle: TextStyle(fontSize: 18),
                 ),
               ),
             ),
@@ -246,10 +248,9 @@ class _SearchSymbolState extends State<SearchSymbol> {
                   ? const Center(child: CircularProgressIndicator())
                   : searchResults.isEmpty
                       ? const Center(
-                          child: Text(
+                          child: GText(
                             'Search results will appear here.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18),
                           ),
                         )
                       : ListView.builder(
@@ -267,7 +268,7 @@ class _SearchSymbolState extends State<SearchSymbol> {
                         ),
             ),
             if (showWarning)
-              const Text(
+              GText(
                 'Warning: Access token may not be valid.',
                 style: TextStyle(color: Colors.red),
               ),

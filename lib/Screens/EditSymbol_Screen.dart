@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gtext/gtext.dart';
 import '../Modules/Symbol/AddEditImage_Mod.dart';
 import '../Modules/Symbol/LinkBoard_Mod.dart';
 import '../Modules/Symbol/SymbolCategory_Mod.dart';
@@ -83,7 +84,7 @@ class _EditSymbolState extends State<EditSymbol> {
     } catch (e) {
       _initializeDefaults();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading symbol data: $e')),
+        SnackBar(content: GText('Error loading symbol data: $e')),
       );
     }
   }
@@ -106,7 +107,7 @@ class _EditSymbolState extends State<EditSymbol> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Edit Symbol'),
+          title: GText('Edit Symbol'),
           actions: [
             IconButton(
               icon: const Icon(Icons.delete),
@@ -120,7 +121,7 @@ class _EditSymbolState extends State<EditSymbol> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Symbol'),
+        title: GText('Edit Symbol'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _confirmCancel,
@@ -163,7 +164,7 @@ class _EditSymbolState extends State<EditSymbol> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: GText('Cancel'),
                           ),
                         ),
                       ),
@@ -184,7 +185,7 @@ class _EditSymbolState extends State<EditSymbol> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                             ),
-                            child: const Text('Save'),
+                            child: GText('Save'),
                           ),
                         ),
                       ),
@@ -340,8 +341,8 @@ class _EditSymbolState extends State<EditSymbol> {
         borderRadius: BorderRadius.circular(10.0),
       ),
       child: ListTile(
-        title: Text(title),
-        subtitle: Text(subtitle),
+        title: GText(title),
+        subtitle: GText(subtitle),
         trailing: const Icon(Icons.arrow_forward_ios_rounded),
         onTap: onTap,
       ),
@@ -353,16 +354,16 @@ class _EditSymbolState extends State<EditSymbol> {
       bool? discard = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Discard changes?'),
-          content: const Text('Are you sure you want to discard all changes?'),
+          title: GText('Discard changes?'),
+          content: GText('Are you sure you want to discard all changes?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('No'),
+              child: GText('No'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Yes'),
+              child: GText('Yes'),
             ),
           ],
         ),
@@ -379,16 +380,16 @@ class _EditSymbolState extends State<EditSymbol> {
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Save'),
-        content: const Text('Are you sure you want to save the changes?'),
+        title: GText('Confirm Save'),
+        content: GText('Are you sure you want to save the changes?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: GText('No'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: GText('Yes'),
           ),
         ],
       ),
@@ -402,16 +403,16 @@ class _EditSymbolState extends State<EditSymbol> {
     bool? delete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this symbol?'),
+        title: GText('Confirm Delete'),
+        content: GText('Are you sure you want to delete this symbol?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: GText('No'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: GText('Yes'),
           ),
         ],
       ),
@@ -445,7 +446,7 @@ class _EditSymbolState extends State<EditSymbol> {
           .delete();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting symbol: $e')),
+        SnackBar(content: GText('Error deleting symbol: $e')),
       );
     }
   }
@@ -457,7 +458,7 @@ class _EditSymbolState extends State<EditSymbol> {
         await ref.delete();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting file from storage: $e')),
+          SnackBar(content: GText('Error deleting file from storage: $e')),
         );
       }
     }
@@ -548,7 +549,7 @@ class _EditSymbolState extends State<EditSymbol> {
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving symbol: $e')),
+          SnackBar(content: GText('Error saving symbol: $e')),
         );
       }
     }

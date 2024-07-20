@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 
 class MoreOptions extends StatefulWidget {
   final bool translate;
@@ -33,6 +34,9 @@ class _MoreOptionsState extends State<MoreOptions> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
@@ -44,9 +48,9 @@ class _MoreOptionsState extends State<MoreOptions> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text(
+            const GText(
               'More Options',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             ListTile(
@@ -56,9 +60,9 @@ class _MoreOptionsState extends State<MoreOptions> {
                   RichText(
                     text: TextSpan(
                       text: 'Switch language to ',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor,
                       ),
                       children: <TextSpan>[
                         TextSpan(
@@ -86,9 +90,9 @@ class _MoreOptionsState extends State<MoreOptions> {
                   RichText(
                     text: TextSpan(
                       text: 'Symbol usage counter: ',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor,
                       ),
                       children: <TextSpan>[
                         TextSpan(
@@ -113,7 +117,7 @@ class _MoreOptionsState extends State<MoreOptions> {
             Align(
               alignment: Alignment.bottomRight,
               child: TextButton(
-                child: const Text('Close'),
+                child: GText('Exit'),
                 onPressed: () {
                   Navigator.of(context).pop({'translate': translate, 'incrementUsageCount': incrementUsageCount});
                 },

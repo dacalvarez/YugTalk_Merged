@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gtext/gtext.dart';
 import '../Modules/EditMode/EditBoard_Mod.dart';
 import './AddSymbol_Screen.dart';
 
@@ -96,7 +97,7 @@ class _CommBoard_EditState extends State<CommBoard_Edit> {
                     side: const BorderSide(color: Colors.black, width: 2),
                   ),
                 ),
-                child: const Text('Add Symbol'),
+                child: GText('Add Symbol'),
               ),
             ),
           if (MediaQuery.of(context).size.width <= 600)

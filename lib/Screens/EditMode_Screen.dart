@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 import '../Widgets/AddBoard_Widget.dart';
 import '../Modules/EditMode/BoardsList_Mod.dart';  
 
@@ -17,7 +18,7 @@ class _EditModeState extends State<EditMode> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Mode'),
+        title: GText('Edit Mode'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

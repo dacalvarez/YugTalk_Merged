@@ -8,7 +8,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtext/gtext.dart';
 import 'package:yugtalk/Screens/Onboarding_Screen.dart';
 import 'Modules/Authentication/Verification_Widget.dart';
-import 'Screens/AboutUs_Screen.dart';
 import 'Screens/Home_Screen.dart';
 import 'Screens/global_snackbar.dart';
 import 'firebase_options.dart';
@@ -110,7 +109,7 @@ class App extends StatelessWidget {
                 ),
               ),
               darkTheme: ThemeData(
-                brightness: Brightness.dark,
+                //brightness: Brightness.dark,
                 primarySwatch: Colors.deepPurple,
                 appBarTheme: const AppBarTheme(
                   backgroundColor: Colors.deepPurple,
@@ -154,7 +153,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
   void _setupLocationMonitoring() {
     _locationMonitor.locationStream.listen((message) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(content: GText(message)),
       );
     });
 
@@ -295,9 +294,8 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
                 ),
               ),
               themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-              home: widget.user.emailVerified
-                  ? Home_Mod()
-                  : const Home_Mod(), // replace to const Home_Mod()
+              home: widget.user.emailVerified ?
+              const Home_Mod() : const Verification_Widget(),
             );
           },
         );

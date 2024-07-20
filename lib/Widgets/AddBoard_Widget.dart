@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:gtext/gtext.dart';
 
 class AddBoardWidget extends StatefulWidget {
   final String userID;
@@ -31,7 +32,7 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
   ];
 
   static const List<String> _languages = ['Filipino', 'English'];
-  List<String> _categories = [
+  final List<String> _categories = [
     'Basic Needs', 'Cognitive and Language Development', 'Social Interaction', 'Academic Support', 'None', 'Other'
   ];
 
@@ -43,7 +44,7 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
     } catch (e) {
       print('Error fetching next document ID: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch next document ID: $e')),
+        SnackBar(content: GText('Failed to fetch next document ID: $e')),
       );
       return -1;
     }
@@ -77,12 +78,14 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
     } catch (e) {
       print('Error adding board: $e');
       ScaffoldMessenger.of(parentContext).showSnackBar(
-        SnackBar(content: Text('Failed to add board: $e')),
+        SnackBar(content: GText('Failed to add board: $e')),
       );
     }
   }
 
   Widget _buildTextField(TextEditingController controller, String label, {bool enabled = true, bool isRequired = true}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -93,10 +96,9 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
             borderRadius: BorderRadius.circular(10.0),
           ),
           filled: true,
-          fillColor: Colors.grey[200],
-          suffixIcon: isRequired ? Icon(Icons.star, color: Colors.red, size: 10) : null,
+          fillColor: isDarkMode ? Colors.grey[1000] : Colors.grey[200],
+          suffixIcon: isRequired ? const Icon(Icons.star, color: Colors.red, size: 10) : null,
         ),
-        style: const TextStyle(fontSize: 16),
         enabled: enabled,
         validator: isRequired ? (value) => value!.isEmpty ? 'This field is required' : null : null,
       ),
@@ -104,6 +106,8 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
   }
 
   Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {bool isRequired = true}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: DropdownButtonFormField<String>(
@@ -113,8 +117,8 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
             borderRadius: BorderRadius.circular(10.0),
           ),
           filled: true,
-          fillColor: Colors.grey[200],
-          suffixIcon: isRequired ? Icon(Icons.star, color: Colors.red, size: 10) : null,
+          fillColor: isDarkMode ? Colors.grey[1000] : Colors.grey[200],
+          suffixIcon: isRequired ? const Icon(Icons.star, color: Colors.red, size: 10) : null,
         ),
         value: value,
         isExpanded: true,
@@ -154,7 +158,7 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Add New Board', style: TextStyle(fontSize: 24)),
+              title: GText('Add New Board'),
               content: Container(
                 width: width,
                 height: height,
@@ -221,13 +225,13 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 18)),
+                  child: GText('Cancel'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                 ),
                 TextButton(
-                  child: const Text('Add', style: TextStyle(fontSize: 18)),
+                  child: GText('Add'),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       int rows, columns;
@@ -263,14 +267,14 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
         await _showAddBoardDialog(context);
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Color.fromRGBO(115, 73, 189, 1),
+        backgroundColor: const Color.fromRGBO(115, 73, 189, 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
         minimumSize: const Size(100, 50),
       ),
-      child: const Text('Add Board', style: TextStyle(color: Colors.white, fontSize: 20)),
+      child: GText('Add Board', style: TextStyle(color: Colors.white)),
     );
   }
 }

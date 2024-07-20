@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 
 class SymbolCategory extends StatelessWidget {
   final String currentCategory;
@@ -42,7 +43,7 @@ class SymbolCategory extends StatelessWidget {
     };
 
     return AlertDialog(
-      title: const Text('Select Category'),
+      title: GText('Select Category'),
       content: Container(
         width: 300,
         height: 400,
@@ -58,10 +59,10 @@ class SymbolCategory extends StatelessWidget {
                   border: Border.all(color: Colors.grey.shade600),
                 ),
                 child: ListTile(
-                  title: Text(
+                  title: GText(
                     category,
                     style: const TextStyle(
-                      color: Colors.black, // Keep text color black for all items
+                      color: Colors.black,
                     ),
                   ),
                   trailing: currentCategory == category
@@ -80,7 +81,7 @@ class SymbolCategory extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: GText('Cancel'),
         ),
       ],
     );

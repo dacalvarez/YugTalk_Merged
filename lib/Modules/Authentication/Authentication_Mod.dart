@@ -74,7 +74,7 @@ class _Authentication_ModState extends State<Authentication_Mod>
                           'Login',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 18, // Increased font size
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -95,7 +95,7 @@ class _Authentication_ModState extends State<Authentication_Mod>
                           'Register',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 18, // Increased font size
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -197,7 +197,7 @@ class _LoginWidgetState extends State<LoginWidget> {
 
       final User? user = userCredential.user;
       if (user != null && user.emailVerified) {
-        widget.onContinue(); // Navigate to the next screen on successful login
+        widget.onContinue();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -208,7 +208,7 @@ class _LoginWidgetState extends State<LoginWidget> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error signing in: $e'), // Display the error message
+          content: Text('Error signing in: $e'),
         ),
       );
     } finally {
@@ -307,7 +307,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                       ),
                       const SizedBox(height: 24),
                       _isLoading
-                          ? const CircularProgressIndicator() // Show loading indicator
+                          ? const CircularProgressIndicator()
                           : FloatingActionButton.extended(
                               onPressed: () {
                                 String email = emailController.text.trim();
@@ -396,7 +396,6 @@ class _RegisterWidgetState extends State<RegisterWidget> {
         final String email = emailController.text.trim();
         final String password = passwordController.text.trim();
 
-        // Check if passwords match
         final String reenteredPassword = reenterPasswordController.text.trim();
         if (password != reenteredPassword) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -405,7 +404,6 @@ class _RegisterWidgetState extends State<RegisterWidget> {
           return;
         }
 
-        // Check if any field is empty
         if (fullName.isEmpty ||
             age == 0 ||
             guardianName.isEmpty ||
@@ -419,7 +417,6 @@ class _RegisterWidgetState extends State<RegisterWidget> {
           return;
         }
 
-        // Check if terms are accepted
         if (!_termsAccepted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -428,7 +425,6 @@ class _RegisterWidgetState extends State<RegisterWidget> {
           return;
         }
 
-        // Query Firestore to get the highest document ID
         final QuerySnapshot<Map<String, dynamic>> querySnapshot =
             await FirebaseFirestore.instance.collection('user').get();
 
@@ -440,17 +436,14 @@ class _RegisterWidgetState extends State<RegisterWidget> {
           }
         }
 
-        // Increment the highest ID by 1 for the new user
         final String userId = (highestId + 1).toString();
 
-        // Register user with email and password
         UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
 
-        // Add user to Firestore
         await FirebaseFirestore.instance.collection('user').doc(userId).set({
           'fullName': fullName,
           'age': age,
@@ -463,7 +456,6 @@ class _RegisterWidgetState extends State<RegisterWidget> {
           const SnackBar(content: Text('User registered successfully')),
         );
 
-        // Call the provided onRegistered function
         widget.onRegistered();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -800,8 +792,9 @@ class _RegisterWidgetState extends State<RegisterWidget> {
                         onPressed:
                             _isLoading ? null : () => _registerUser(context),
                         style: ButtonStyle(
-                          backgroundColor: MaterialStateProperty.all<Color>(
+                          backgroundColor: WidgetStateProperty.all<Color>(
                               const Color(0xFFe8c221)),
+                          foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(

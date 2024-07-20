@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:gtext/gtext.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
@@ -58,7 +59,8 @@ class _PopupFormModState extends State<PopupFormMod> {
           wordImage = documentSnapshot['wordImage'];
 
           if (wordVideo.isNotEmpty) {
-            _videoPlayerController = VideoPlayerController.network(wordVideo)
+            //_videoPlayerController = VideoPlayerController.network(wordVideo)
+            _videoPlayerController = VideoPlayerController.networkUrl(wordVideo as Uri)
               ..initialize().then((_) {
                 setState(() {});
               }).catchError((_) {
@@ -140,7 +142,7 @@ class _PopupFormModState extends State<PopupFormMod> {
                               ],
                             )
                           : const Center(
-                              child: Text(
+                              child: GText(
                                 'No video data',
                                 style: TextStyle(
                                   fontStyle: FontStyle.italic,
@@ -170,10 +172,9 @@ class _PopupFormModState extends State<PopupFormMod> {
                                 ),
                               )
                             : const Center(
-                                child: Text(
+                                child: GText(
                                   'Symbol Container',
                                   style: TextStyle(
-                                    fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -213,17 +214,15 @@ class _PopupFormModState extends State<PopupFormMod> {
                     Text(
                       wordName,
                       style: const TextStyle(
-                        fontSize: 30,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Expanded(
                       child: SingleChildScrollView(
-                        child: Text(
+                        child: GText(
                           wordDesc.isNotEmpty ? wordDesc : 'No description for this symbol',
                           style: TextStyle(
-                            fontSize: 20,
                             fontStyle: wordDesc.isNotEmpty ? FontStyle.normal : FontStyle.italic,
                           ),
                         ),
@@ -307,23 +306,23 @@ class _PopupFormModState extends State<PopupFormMod> {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 0.5,
-                      child: Text("0.5x"),
+                      child: GText("0.5x"),
                     ),
                     const PopupMenuItem(
                       value: 0.75,
-                      child: Text("0.75x"),
+                      child: GText("0.75x"),
                     ),
                     const PopupMenuItem(
                       value: 1.0,
-                      child: Text("1.0x (Normal)"),
+                      child: GText("1.0x (Normal)"),
                     ),
                     const PopupMenuItem(
                       value: 1.25,
-                      child: Text("1.25x"),
+                      child: GText("1.25x"),
                     ),
                     const PopupMenuItem(
                       value: 1.5,
-                      child: Text("1.5x"),
+                      child: GText("1.5x"),
                     ),
                   ],
                   child: const Icon(

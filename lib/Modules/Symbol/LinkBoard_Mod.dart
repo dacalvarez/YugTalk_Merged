@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gtext/gtext.dart';
 
 class LinkBoardMod extends StatelessWidget {
   final bool isLinked;
@@ -32,11 +33,11 @@ class LinkBoardMod extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Select Board'),
+          title: GText('Select Board'),
           content: Container(
             width: double.minPositive,
             child: boards.docs.isEmpty
-                ? const Center(child: Text('No boards available'))
+                ? const Center(child: GText('No boards available'))
                 : ListView(
                     shrinkWrap: true,
                     children: boards.docs
@@ -58,7 +59,7 @@ class LinkBoardMod extends StatelessWidget {
                 Navigator.pop(context);
                 onLinkChanged(false, null);
               },
-              child: const Text('Cancel'),
+              child: GText('Cancel'),
             ),
           ],
         );
@@ -73,7 +74,7 @@ class LinkBoardMod extends StatelessWidget {
       builder: (context, snapshot) {
         String? boardName = snapshot.data;
         return SwitchListTile(
-          title: Text(isLinked && boardName != null ? 'Linked to Board ($boardName)' : 'Link to Board'),
+          title: GText(isLinked && boardName != null ? 'Linked to Board ($boardName)' : 'Link to Board'),
           value: isLinked,
           onChanged: (value) {
             if (value) {

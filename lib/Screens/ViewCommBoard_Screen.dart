@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gtext/gtext.dart';
 import '../Modules/CommBoard/CommBoard_Mod.dart';
 import './EditCommBoard_Screen.dart';
 import '../Modules/CommBoard/MoreOptions_Mod.dart';
@@ -79,11 +80,7 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop();
-        return false;
-      },
+    return PopScope(
       child: Scaffold(
         appBar: AppBar(
           title: isLoading
@@ -122,7 +119,7 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
                     side: const BorderSide(color: Colors.black, width: 2), // Adding outline
                   ),
                 ),
-                child: const Text('Edit'),
+                child: GText('Edit'),
               ),
             ),
             const SizedBox(width: 4),
@@ -138,7 +135,7 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
                     side: const BorderSide(color: Colors.black, width: 2), // Adding outline
                   ),
                 ),
-                child: const Text('Options'),
+                child: GText('Options'),
               ),
             ),
             const Padding(padding: EdgeInsets.only(right: 10)),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:gtext/gtext.dart';
 import '../Modules/Symbol/AddEditImage_Mod.dart';
 import '../Modules/Symbol/LinkBoard_Mod.dart';
 import '../Modules/Symbol/SymbolCategory_Mod.dart';
@@ -47,7 +48,7 @@ class _AddSymbolState extends State<AddSymbol> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Symbol'),
+        title:  GText('Add Symbol'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _confirmCancel,
@@ -84,7 +85,7 @@ class _AddSymbolState extends State<AddSymbol> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: GText('Cancel'),
                           ),
                         ),
                       ),
@@ -105,7 +106,7 @@ class _AddSymbolState extends State<AddSymbol> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                             ),
-                            child: const Text('Save'),
+                            child: GText('Save'),
                           ),
                         ),
                       ),
@@ -219,8 +220,8 @@ class _AddSymbolState extends State<AddSymbol> {
         borderRadius: BorderRadius.circular(10.0),
       ),
       child: ListTile(
-        title: Text(title),
-        subtitle: Text(subtitle),
+        title: GText(title),
+        subtitle: GText(subtitle),
         trailing: const Icon(Icons.arrow_forward_ios_rounded),
         onTap: onTap,
       ),
@@ -232,16 +233,16 @@ class _AddSymbolState extends State<AddSymbol> {
       bool? discard = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Discard changes?'),
-          content: const Text('Are you sure you want to discard all changes?'),
+          title: GText('Discard changes?'),
+          content: GText('Are you sure you want to discard all changes?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('No'),
+              child: GText('No'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Yes'),
+              child: GText('Yes'),
             ),
           ],
         ),
@@ -265,20 +266,18 @@ class _AddSymbolState extends State<AddSymbol> {
         bool? confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Confirm Save'),
+            title: GText('Confirm Save'),
             content: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                GText(
                   'Are you sure you want to save the changes?',
-                  style: TextStyle(fontSize: 20),
                 ),
                 SizedBox(height: 10),
-                Text(
+                GText(
                   'Note: To add audio or video, go to edit symbol.',
                   style: TextStyle(
                     fontStyle: FontStyle.italic,
-                    fontSize: 14,
                   ),
                 ),
               ],
@@ -286,11 +285,11 @@ class _AddSymbolState extends State<AddSymbol> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('No'),
+                child: GText('No'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes'),
+                child: GText('Yes'),
               ),
             ],
           ),
@@ -319,7 +318,7 @@ class _AddSymbolState extends State<AddSymbol> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch next document ID: $e')),
+        SnackBar(content: GText('Failed to fetch next document ID: $e')),
       );
       return -1; // Return an invalid ID or handle appropriately
     }
@@ -383,12 +382,12 @@ class _AddSymbolState extends State<AddSymbol> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        title: GText('Error'),
+        content: GText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: GText('OK'),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:gtext/gtext.dart';
 
 class SymbolPlayer_Mod extends StatefulWidget {
   final List<Map<String, String>> selectedSymbols;
@@ -91,11 +92,11 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Error'),
-          content: Text(message),
+          title: GText('Error'),
+          content: GText(message),
           actions: [
             TextButton(
-              child: Text('OK'),
+              child: GText('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -109,7 +110,7 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: GText(message),
       ),
     );
   }
@@ -156,12 +157,16 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
   @override
   Widget build(BuildContext context) {
     bool isQueueEmpty = widget.selectedSymbols.isEmpty;
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    Color iconColor = isDarkMode ? Colors.white : Colors.black;
+    Color disabledColor = Colors.grey.withAlpha(100);
 
     return Material(
       child: Container(
         padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
+          border: Border.all(color: isDarkMode ? Colors.white : Colors.black),
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: Row(
@@ -169,7 +174,7 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
             SizedBox(
               width: 60,
               child: IconButton(
-                icon: Icon(Icons.play_arrow, color: isQueueEmpty ? Colors.grey : Colors.black),
+                icon: Icon(Icons.play_arrow, color: isQueueEmpty ? disabledColor : iconColor),
                 iconSize: 32,
                 onPressed: isQueueEmpty
                     ? null
@@ -179,7 +184,7 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
               ),
             ),
             Expanded(
-              child: Container(
+              child: SizedBox(
                 height: 60,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -191,7 +196,7 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
                       padding: const EdgeInsets.all(4.0),
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black),
+                        border: Border.all(color: isDarkMode ? Colors.white : Colors.black),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: widget.selectedSymbols[index]['symbolImage'] != null
@@ -214,7 +219,7 @@ class _SymbolPlayer_ModState extends State<SymbolPlayer_Mod> {
                         _clearQueue();
                       },
                 child: IconButton(
-                  icon: Icon(Icons.backspace, color: isQueueEmpty ? Colors.grey : Colors.black),
+                  icon: Icon(Icons.backspace, color: isQueueEmpty ? disabledColor : iconColor),
                   iconSize: 32,
                   onPressed: isQueueEmpty
                       ? null

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'package:gtext/gtext.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:yugtalk/Widgets/Drawer_Widget.dart';
 import '../Modules/Activity Mode/ActivityMode_Mod.dart';
+import '../Modules/Activity Mode/Statistics/Stats_Mod.dart';
 import '../Modules/Activity Mode/Statistics/WordUsage.dart';
 import 'MeMode_Screen.dart';
 import 'EditMode_Screen.dart';
@@ -32,13 +34,16 @@ class _Home_ModState extends State<Home_Mod>
   bool _sortAscending = true;
   int _sortColumnIndex = 0;
   int _locationCount = 0;
+  List<Map<String, String>> _userLocations = [];
+  StreamSubscription<DocumentSnapshot>? _locationListener;
   late String userID;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _fetchLocationCount();
+    _setupLocationListener();
+    _fetchUserLocations();
   }
 
   @override
@@ -46,24 +51,89 @@ class _Home_ModState extends State<Home_Mod>
     _tabController.dispose();
     editModePasswordController.dispose();
     activityModePasswordController.dispose();
+    _locationListener?.cancel();
     super.dispose();
   }
 
-  Future<void> _fetchLocationCount() async {
+  Future<void> _fetchUserLocations() async {
+    if (!mounted) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      if (mounted) {
+        setState(() {
+          _locationCount = 0;
+        });
+      }
+      return;
+    }
+
+    try {
+      final userSettingsDoc = await FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(user.email)
+          .get();
+
+      if (!mounted) return;
+
+      if (!userSettingsDoc.exists) {
+        setState(() {
+          _locationCount = 0;
+        });
+        return;
+      }
+
+      final userLocations =
+      userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+      if (userLocations == null) {
+        setState(() {
+          _locationCount = 0;
+        });
+        return;
+      }
+
+      List<Map<String, String>> locationAddresses = [];
+      userLocations.forEach((key, value) {
+        String decodedValue = utf8.decode(base64.decode(value));
+        List<dynamic> decodedJson = jsonDecode(decodedValue);
+        for (var location in decodedJson) {
+          String address = location['address'];
+          locationAddresses.add({'type': key, 'address': address});
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _userLocations = locationAddresses;
+          _locationCount = locationAddresses.length;
+        });
+      }
+    } catch (e) {
+      print('Error fetching user locations: $e');
+      if (mounted) {
+        setState(() {
+          _locationCount = 0;
+        });
+      }
+    }
+  }
+
+
+  void _setupLocationListener() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null) {
-
       userID = user.email!;
 
-      try {
-        final userSettingsDoc = await FirebaseFirestore.instance
-            .collection('userSettings')
-            .doc(user.email)
-            .get();
+      _locationListener = FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(user.email)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (!mounted) return;
 
-        if (userSettingsDoc.exists) {
+        if (docSnapshot.exists) {
           final userLocations =
-              userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+          docSnapshot.data()?['userLocations'] as Map<String, dynamic>?;
           if (userLocations != null) {
             int totalLocations = 0;
             userLocations.forEach((key, value) {
@@ -71,14 +141,16 @@ class _Home_ModState extends State<Home_Mod>
               List<dynamic> decodedJson = jsonDecode(decodedValue);
               totalLocations += decodedJson.length;
             });
-            setState(() {
-              _locationCount = totalLocations;
-            });
+            if (mounted) {
+              setState(() {
+                _locationCount = totalLocations;
+              });
+            }
           }
         }
-      } catch (e) {
-        print('Error fetching location count: $e');
-      }
+      }, onError: (error) {
+        print('Error listening to location changes: $error');
+      });
     }
   }
 
@@ -96,10 +168,8 @@ class _Home_ModState extends State<Home_Mod>
     }
 
     try {
-      // Hash the password using SHA-256 algorithm
       String hashedPassword = hashPassword(password);
 
-      // Query both SLP and guardian collections for the hashed password
       QuerySnapshot<Map<String, dynamic>> slpSnapshot = await FirebaseFirestore
           .instance
           .collection('SLP')
@@ -112,36 +182,30 @@ class _Home_ModState extends State<Home_Mod>
               .where('password', isEqualTo: hashedPassword)
               .get();
 
-      // Determine the user type based on where the hashed password is found
       String userType;
       if (slpSnapshot.docs.isNotEmpty) {
         userType = 'SLP';
       } else if (guardianSnapshot.docs.isNotEmpty) {
         userType = 'guardian';
       } else {
-        // Password not found in either collection
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: GText('Invalid password.')),
         );
         return;
       }
 
-      // Navigate based on user type and current tab index
       switch (_tabController.index) {
         case 0:
-          // Me Mode
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => MeMode(userID: userID)));
           break;
         case 1:
-          // Edit Mode - Both SLPs and guardians can access
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => EditMode(userID: userID)),
           );
           break;
         case 2:
-          // Activity Mode - Only SLPs can access
           if (userType == 'SLP') {
             Navigator.pushReplacement(
               context,
@@ -162,11 +226,10 @@ class _Home_ModState extends State<Home_Mod>
     }
   }
 
-// Hash the password using SHA-256 algorithm
   String hashPassword(String password) {
-    var bytes = utf8.encode(password); // Encode the password as UTF-8
-    var digest = sha256.convert(bytes); // Generate the SHA-256 hash
-    return digest.toString(); // Convert the hash to a string and return it
+    var bytes = utf8.encode(password);
+    var digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   @override
@@ -222,7 +285,7 @@ class _Home_ModState extends State<Home_Mod>
           const SizedBox(width: 8),
           GText(
             label,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -258,7 +321,7 @@ class _Home_ModState extends State<Home_Mod>
                   Center(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.play_arrow),
-                      label: const GText('Start Communication'),
+                      label: GText('Start Communication'),
                       onPressed: () {
                         Navigator.push(
                             context,
@@ -312,7 +375,7 @@ class _Home_ModState extends State<Home_Mod>
     return GestureDetector(
       onTap: () => _showDetailsDialog(context, title, count),
       child: Container(
-        padding: const EdgeInsets.all(8.0), // Adjusted padding
+        padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(
           color: isDarkMode ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -329,12 +392,11 @@ class _Home_ModState extends State<Home_Mod>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon,
-                size: 40, color: Colors.deepPurple), // Increased icon size
+                size: 40, color: Colors.deepPurple),
             const SizedBox(height: 8),
             GText(
               title,
               style: TextStyle(
-                fontSize: 16, // Increased font size
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
@@ -343,7 +405,6 @@ class _Home_ModState extends State<Home_Mod>
             GText(
               count.toString(),
               style: const TextStyle(
-                fontSize: 20, // Increased font size
                 fontWeight: FontWeight.bold,
                 color: Colors.deepPurple,
               ),
@@ -354,7 +415,7 @@ class _Home_ModState extends State<Home_Mod>
     );
   }
 
-  void _showDetailsDialog(BuildContext context, String title, int count) {
+  /*void _showDetailsDialog(BuildContext context, String title, int count) {
     List<WordUsage> filteredWords = _getFilteredWords(title);
 
     showDialog(
@@ -415,7 +476,7 @@ class _Home_ModState extends State<Home_Mod>
               ),
               actions: [
                 TextButton(
-                  child: const GText('Close'),
+                  child: GText('Exit'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -426,6 +487,31 @@ class _Home_ModState extends State<Home_Mod>
         );
       },
     );
+  }*/
+
+  void _showDetailsDialog(BuildContext context, String title, int count) {
+    List<dynamic> items = _getFilteredItems(title);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return GeneralStatsDialog(title: title);
+      },
+    );
+  }
+
+  List<dynamic> _getFilteredItems(String title) {
+    switch (title) {
+      case 'Words':
+      case 'Most Used':
+      case 'Least Used':
+      case 'Categories':
+        return _getFilteredWords(title);
+      case 'Locations':
+        return _userLocations;
+      default:
+        return [];
+    }
   }
 
   List<WordUsage> _getFilteredWords(String title) {
@@ -471,7 +557,7 @@ class _Home_ModState extends State<Home_Mod>
   List<DataColumn> _getColumns(String title) {
     List<DataColumn> columns = [
       DataColumn(
-        label: const GText('Word'),
+        label: GText('Word'),
         onSort: (columnIndex, ascending) {
           setState(() {
             _sortColumnIndex = columnIndex;
@@ -483,7 +569,7 @@ class _Home_ModState extends State<Home_Mod>
         },
       ),
       DataColumn(
-        label: const GText('Category'),
+        label: GText('Category'),
         onSort: (columnIndex, ascending) {
           setState(() {
             _sortColumnIndex = columnIndex;
@@ -495,7 +581,7 @@ class _Home_ModState extends State<Home_Mod>
         },
       ),
       DataColumn(
-        label: const GText('Frequency'),
+        label: GText('Frequency'),
         onSort: (columnIndex, ascending) {
           setState(() {
             _sortColumnIndex = columnIndex;
@@ -600,7 +686,7 @@ class _Home_ModState extends State<Home_Mod>
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () => _authenticate(context),
-                        child: const GText('Enter'),
+                        child: GText('Enter'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,

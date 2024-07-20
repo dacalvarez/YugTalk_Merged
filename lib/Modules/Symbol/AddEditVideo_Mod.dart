@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:video_compress/video_compress.dart';
@@ -68,7 +69,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking video: $e')),
+        SnackBar(content: GText('Error picking video: $e')),
       );
     }
   }
@@ -112,12 +113,12 @@ class _AddEditVideoState extends State<AddEditVideo> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        title: GText('Error'),
+        content: GText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: GText('OK'),
           ),
         ],
       ),
@@ -143,10 +144,9 @@ class _AddEditVideoState extends State<AddEditVideo> {
     final dialogHeight = screenHeight * 0.35;
     final dialogWidth = screenWidth * 0.35;
 
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
       child: AlertDialog(
-        title: const Text('Select Video'),
+        title: GText('Select Video'),
         content: SizedBox(
           height: dialogHeight,
           width: dialogWidth,
@@ -158,8 +158,8 @@ class _AddEditVideoState extends State<AddEditVideo> {
                   color: Colors.grey[300],
                   child: Center(
                     child: _currentVideo.isEmpty
-                        ? const Text('No video selected')
-                        : const Text('Video uploaded. Long press the word to view.'),
+                        ? GText('No video selected')
+                        : GText('Video uploaded. Long press the word to view.'),
                   ),
                 ),
               ),
@@ -176,7 +176,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Gallery', style: TextStyle(color: Colors.white)),
+                      child: GText('Gallery', style: TextStyle(color: Colors.white)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -190,7 +190,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Camera', style: TextStyle(color: Colors.white)),
+                      child: GText('Camera', style: TextStyle(color: Colors.white)),
                     ),
                   ),
                 ],
@@ -209,7 +209,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                        child: GText('Delete', style: TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],
@@ -221,14 +221,14 @@ class _AddEditVideoState extends State<AddEditVideo> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: GText('Cancel'),
           ),
           TextButton(
             onPressed: () {
               widget.onVideoChanged(_currentVideo);
               Navigator.pop(context);
             },
-            child: const Text('Save'),
+            child: GText('Save'),
           ),
         ],
       ),

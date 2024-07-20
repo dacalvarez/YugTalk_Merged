@@ -445,7 +445,6 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
         for (var lf in lfList) {
           String location = lf.location.toString().split('.').last;
           int frequency = lf.frequency;
-          // Add frequency to existing value if location matches the selected location
           if (selectedLocation == 'All Locations' ||
               location == selectedLocation) {
             locationFrequencies[location] =
@@ -1294,6 +1293,69 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _popupSearchQuery = value;
+                          filteredItems = _filterItems();
+                          if (widget.title == 'Locations') {
+                            _filterItemsByCategory(_selectedFilter);
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildFilterDropdown(),
+            ),
+            Expanded(
+              child: widget.title == 'Locations' && filteredItems.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.separated(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: filteredItems.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(filteredItems[index]['address']!),
+                    subtitle: Text(filteredItems[index]['type'] ?? ''),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /*@override
+  Widget build(BuildContext context) {
     return AlertDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1358,5 +1420,5 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
       ],
     );
-  }
+  }*/
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:gtext/gtext.dart';
 import '/Screens/ViewCommBoard_Screen.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -184,43 +185,39 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           return StatefulBuilder(
             builder: (context, setState) {
               return AlertDialog(
-                title: const Text('Edit Board', style: TextStyle(fontSize: 24)),
+                title: GText('Edit Board'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
                       controller: _nameController,
                       decoration: const InputDecoration(labelText: 'Board Name'),
-                      style: const TextStyle(fontSize: 18),
                     ),
                     TextField(
                       controller: _categoryController,
                       decoration: const InputDecoration(labelText: 'Category'),
-                      style: const TextStyle(fontSize: 18),
                     ),
                     TextField(
                       controller: _rowsController,
                       decoration: const InputDecoration(labelText: 'Rows'),
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(fontSize: 18),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     TextField(
                       controller: _columnsController,
                       decoration: const InputDecoration(labelText: 'Columns'),
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(fontSize: 18),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     const SizedBox(height: 16),
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Language', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: GText('Language', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     Column(
                       children: _languages.map((language) {
                         return RadioListTile<String>(
-                          title: Text(language),
+                          title: GText(language),
                           value: language,
                           groupValue: _selectedLanguage,
                           onChanged: (String? value) {
@@ -235,13 +232,13 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                 ),
                 actions: <Widget>[
                   TextButton(
-                    child: const Text('Cancel', style: TextStyle(fontSize: 18)),
+                    child: GText('Cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
                   ),
                   TextButton(
-                    child: const Text('Save', style: TextStyle(fontSize: 18)),
+                    child: GText('Save'),
                     onPressed: () {
                       Navigator.of(context).pop();
                       _editBoard(
@@ -277,11 +274,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         _fetchBoards();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Board edited successfully')),
+        const SnackBar(content: GText('Board edited successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to edit board: $e')),
+        SnackBar(content: GText('Failed to edit board: $e')),
       );
     }
   }
@@ -321,11 +318,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
             _fetchBoards();
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Board duplicated successfully')),
+            const SnackBar(content: GText('Board duplicated successfully')),
           );
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to duplicate board: $e')),
+            SnackBar(content: GText('Failed to duplicate board: $e')),
           );
         }
       }
@@ -341,15 +338,15 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text('Confirm Delete', style: TextStyle(fontSize: 24)),
-            content: const Text('Are you sure you want to delete this board?', style: TextStyle(fontSize: 18)),
+            title:  GText('Confirm Delete'),
+            content: GText('Are you sure you want to delete this board?'),
             actions: <Widget>[
               TextButton(
-                child: const Text('Cancel', style: TextStyle(fontSize: 18)),
+                child: GText('Cancel'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               TextButton(
-                child: const Text('Delete', style: TextStyle(fontSize: 18)),
+                child: GText('Delete'),
                 onPressed: () async {
                   Navigator.of(context).pop();
                   final boardID = board['id'];
@@ -367,13 +364,13 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                         });
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Board deleted successfully')),
+                            const SnackBar(content: GText('Board deleted successfully')),
                           );
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to delete board: $e')),
+                            SnackBar(content: GText('Failed to delete board: $e')),
                           );
                         }
                       }
@@ -393,11 +390,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Cannot Delete Main Board', style: TextStyle(fontSize: 24)),
-          content: const Text('To delete this board, please set a different board as the main board.', style: TextStyle(fontSize: 18)),
+          title: GText('Cannot Delete Main Board'),
+          content: GText('To delete this board, please set a different board as the main board.'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Close', style: TextStyle(fontSize: 18)),
+              child: GText('Exit'),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -446,11 +443,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           _fetchBoards();
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Board duplicated and hidden successfully')),
+          const SnackBar(content: GText('Board duplicated and hidden successfully')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to duplicate and hide board: $e')),
+          SnackBar(content: GText('Failed to duplicate and hide board: $e')),
         );
       }
     }
@@ -467,15 +464,15 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Set as Main Board', style: TextStyle(fontSize: 24)),
-          content: const Text('Are you sure you want to set this board as the main board?', style: TextStyle(fontSize: 18)),
+          title: GText('Set as Main Board'),
+          content: GText('Are you sure you want to set this board as the main board?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel', style: TextStyle(fontSize: 18)),
+              child: GText('Cancel'),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: const Text('Set as Main', style: TextStyle(fontSize: 18)),
+              child: GText('Set as Main'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _setMainBoard(index);
@@ -517,9 +514,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Language', style: TextStyle(fontSize: 12)),
+                   GText('Language'),
                   DropdownButton<String>(
-                    hint: const Text('Language'),
+                    hint: GText('Language'),
                     value: _selectedLanguage,
                     onChanged: (value) {
                       setState(() {
@@ -528,9 +525,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                       });
                     },
                     items: const [
-                      DropdownMenuItem(value: null, child: Text('All')),
-                      DropdownMenuItem(value: 'Filipino', child: Text('Filipino')),
-                      DropdownMenuItem(value: 'English', child: Text('English')),
+                      DropdownMenuItem(value: null, child: GText('All')),
+                      DropdownMenuItem(value: 'Filipino', child: GText('Filipino')),
+                      DropdownMenuItem(value: 'English', child: GText('English')),
                     ],
                   ),
                 ],
@@ -539,9 +536,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Category', style: TextStyle(fontSize: 12)),
+                  GText('Category'),
                   DropdownButton<String>(
-                    hint: const Text('Category'),
+                    hint: GText('Category'),
                     value: _selectedCategory,
                     onChanged: (value) {
                       setState(() {
@@ -550,11 +547,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                       });
                     },
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All')),
+                      const DropdownMenuItem(value: null, child: GText('All')),
                       ..._boards
                           .map((board) => board['category'])
                           .toSet()
-                          .map((category) => DropdownMenuItem(value: category, child: Text(category))),
+                          .map((category) => DropdownMenuItem(value: category, child: GText(category))),
                     ],
                   ),
                 ],
@@ -563,9 +560,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Dimensions', style: TextStyle(fontSize: 12)),
+                  GText('Dimensions'),
                   DropdownButton<String>(
-                    hint: const Text('Dimensions'),
+                    hint: GText('Dimensions'),
                     value: _selectedDimensions,
                     onChanged: (value) {
                       setState(() {
@@ -574,11 +571,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                       });
                     },
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All')),
+                      const DropdownMenuItem(value: null, child: GText('All')),
                       ..._boards
                           .map((board) => '${board['rows']}x${board['columns']}')
                           .toSet()
-                          .map((dimensions) => DropdownMenuItem(value: dimensions, child: Text(dimensions))),
+                          .map((dimensions) => DropdownMenuItem(value: dimensions, child: GText(dimensions))),
                     ],
                   ),
                 ],
@@ -600,9 +597,13 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).brightness == Brightness.light
+                        ? Colors.white
+                        : Colors.black12,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: Theme.of(context).brightness == Brightness.light
+                        ? Colors.grey.shade300
+                        : Colors.grey.shade900),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -659,7 +660,7 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                         leading: const Icon(Icons.dashboard),
                         title: Row(
                           children: [
-                            Text(board['name'], style: const TextStyle(fontSize: 20)),
+                            GText(board['name']),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -667,25 +668,25 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                                 color: Colors.purple.shade200,
                                 borderRadius: BorderRadius.circular(5),
                               ),
-                              child: Text(dimensionsTag, style: const TextStyle(fontSize: 16, color: Colors.white)),
+                              child: GText(dimensionsTag, style: const TextStyle(color: Colors.white)),
                             ),
                           ],
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            GText(
                               languageTag,
-                              style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                             ),
-                            Text(
+                            GText(
                               'Category: ${board['category']}',
-                              style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                             ),
                             if (!board['isDefault'])
-                              Text(
+                              GText(
                                 'Date Created: ${board['dateCreated']}',
-                                style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                                style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                               ),
                           ],
                         ),

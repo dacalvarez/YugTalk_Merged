@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:gtext/gtext.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -137,16 +138,16 @@ class _AddEditAudioState extends State<AddEditAudio> {
     bool? confirmDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete recording?'),
-        content: const Text('Are you sure you want to delete the recorded audio?'),
+        title: GText('Delete recording?'),
+        content: GText('Are you sure you want to delete the recorded audio?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: GText('No'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: GText('Yes'),
           ),
         ],
       ),
@@ -171,7 +172,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: GText(message),
         backgroundColor: Colors.red,
       ),
     );
@@ -182,19 +183,19 @@ class _AddEditAudioState extends State<AddEditAudio> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Discard changes?'),
-          content: const Text('Are you sure you want to discard all changes?'),
+          title: GText('Discard changes?'),
+          content: GText('Are you sure you want to discard all changes?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('No'),
+              child: GText('No'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context, true);
                 Navigator.pop(context);
               },
-              child: const Text('Yes'),
+              child: GText('Yes'),
             ),
           ],
         ),
@@ -230,7 +231,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Audio'),
+      title: GText('Audio'),
       content: Container(
         padding: const EdgeInsets.all(10),
         height: MediaQuery.of(context).size.height * 0.20,
@@ -242,7 +243,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
               Container(
                 padding: const EdgeInsets.all(10),
                 color: Colors.grey[200],
-                child: const Text('Recorded audio data available.'),
+                child: GText('Recorded audio data available.'),
               ),
             const SizedBox(height: 10),
             if (_recordedFilePath != null) ...[
@@ -260,7 +261,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       actions: [
         TextButton(
           onPressed: _confirmCancel,
-          child: const Text('Cancel'),
+          child: GText('Cancel'),
         ),
         TextButton(
           onPressed: () {
@@ -269,7 +270,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
             }
             Navigator.pop(context);
           },
-          child: const Text('Save'),
+          child: GText('Save'),
         ),
       ],
     );
@@ -287,7 +288,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
               ),
             ),
             onPressed: _isPlaying ? _stopPlaying : _playRecording,
-            child: Text(
+            child: GText(
               _isPlaying ? 'Stop' : 'Play',
               style: const TextStyle(color: Colors.white),
             ),
@@ -309,7 +310,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
               ),
             ),
             onPressed: _deleteRecording,
-            child: const Text(
+            child: GText(
               'Delete',
               style: TextStyle(color: Colors.white),
             ),
@@ -331,7 +332,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
               ),
             ),
             onPressed: _isRecording ? _stopRecording : _startRecording,
-            child: Text(
+            child: GText(
               _isRecording ? 'Stop' : 'Record',
               style: const TextStyle(color: Colors.white),
             ),
@@ -353,7 +354,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
               ),
             ),
             onPressed: _uploadAudio,
-            child: const Text(
+            child: GText(
               'Upload',
               style: TextStyle(color: Colors.white),
             ),
@@ -370,7 +371,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
                 ),
               ),
               onPressed: _deleteRecording,
-              child: const Text(
+              child: GText(
                 'Delete',
                 style: TextStyle(color: Colors.white),
               ),
