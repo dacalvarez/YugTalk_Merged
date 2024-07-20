@@ -114,7 +114,7 @@ class _AccountScreenState extends State<AccountScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const GText("Select Profile Picture"),
+          title: GText("Select Profile Picture"),
           content: SingleChildScrollView(
             child: ListBody(
               children: [
@@ -123,7 +123,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     Navigator.pop(context);
                     _captureImage();
                   },
-                  child: const GText("Camera"),
+                  child: GText("Camera"),
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
@@ -131,10 +131,10 @@ class _AccountScreenState extends State<AccountScreen> {
                     Navigator.pop(context);
                     _pickImage();
                   },
-                  child: const GText("Gallery"),
+                  child: GText("Gallery"),
                 ),
                 const SizedBox(height: 20),
-                const GText(
+                GText(
                   "* Please do not upload pictures exceeding 1 MiB.",
                   style: TextStyle(
                     color: Colors.grey,
@@ -269,7 +269,7 @@ class _AccountScreenState extends State<AccountScreen> {
       showDialog(
         context: dialogContext,
         builder: (BuildContext context) => AlertDialog(
-          title: const GText("Capture Image"),
+          title: GText("Capture Image"),
           content: AspectRatio(
             aspectRatio: controller.value.aspectRatio,
             child: CameraPreview(controller),
@@ -355,13 +355,13 @@ class _AccountScreenState extends State<AccountScreen> {
                   );
                 }
               },
-              child: const GText("Capture"),
+              child: GText("Capture"),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: const GText("Cancel"),
+              child: GText("Cancel"),
             ),
           ],
         ),
@@ -480,7 +480,7 @@ class _AccountScreenState extends State<AccountScreen> {
     return Scaffold(
       key: scaffoldMessengerKey,
       appBar: AppBar(
-        title: const GText('Your Account'),
+        title: GText('Your Account'),
         actions: [
           if (_isEditing)
             IconButton(
@@ -571,7 +571,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
-                        child: const GText('Change Password'),
+                        child: GText('Change Password'),
                       ),
                     ],
                   ),

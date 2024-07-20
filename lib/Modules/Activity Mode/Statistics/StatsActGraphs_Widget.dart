@@ -240,7 +240,7 @@ class _StatsActGraphs_WidgetState extends State<StatsActGraphs_Widget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const GText('Activity Forms Statistics'),
+        title: GText('Activity Forms Statistics'),
       ),
       body: GestureDetector(
         onTap: () {
@@ -372,7 +372,7 @@ class _StatsActGraphs_WidgetState extends State<StatsActGraphs_Widget> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const GText(
+                                GText(
                                   'Total',
                                   style: TextStyle(
                                     //fontSize: 24,

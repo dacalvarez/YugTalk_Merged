@@ -1,9 +1,9 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:gtext/gtext.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image/image.dart' as img;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'SearchSymbol_Mod.dart';
@@ -26,6 +26,7 @@ class _AddEditImageState extends State<AddEditImage> {
   late String _originalImage;
   static const int _maxFileSize = 5 * 1024 * 1024; // 5 MB in bytes
   static const int _resizeFileSize = 1 * 1024 * 1024; // 1 MB in bytes
+  List<CameraDescription> cameras = [];
 
   final ImagePicker _picker = ImagePicker();
 
@@ -163,6 +164,8 @@ class _AddEditImageState extends State<AddEditImage> {
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {

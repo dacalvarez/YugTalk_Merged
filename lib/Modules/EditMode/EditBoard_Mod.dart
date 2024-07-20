@@ -248,7 +248,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
       children: [
         Icon(Icons.error, color: Colors.red, size: maxHeight * 0.3),
         if (maxHeight > 100)
-          const GText(
+          GText(
             'Error',
             style: TextStyle(color: Colors.red),
           ),

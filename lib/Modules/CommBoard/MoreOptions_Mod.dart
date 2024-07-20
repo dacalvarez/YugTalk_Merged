@@ -48,7 +48,7 @@ class _MoreOptionsState extends State<MoreOptions> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const GText(
+            GText(
               'More Options',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),

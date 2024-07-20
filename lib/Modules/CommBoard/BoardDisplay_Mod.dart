@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -62,6 +63,9 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
     flutterTts.setCompletionHandler(() async {
       if (speechQueue.isNotEmpty) {
         String nextPhrase = speechQueue.removeFirst();
+        if (_isMobileDevice()) {
+          await Future.delayed(Duration(milliseconds: 300));
+        }
         await flutterTts.speak(nextPhrase);
       } else {
         if (mounted) {
@@ -80,9 +84,14 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
       }
     });
 
+    if (_isMobileDevice()) {
+      await flutterTts.setSpeechRate(0.4);
+      await flutterTts.setPitch(1.0);
+    } else {
+      await flutterTts.setSpeechRate(0.75);
+      await flutterTts.setPitch(1.2);
+    }
 
-    flutterTts.setSpeechRate(0.75);
-    flutterTts.setPitch(1.2);
     await _setInitialTtsVoice();
   }
 
@@ -240,33 +249,58 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   }
 
   void _speak(String text) async {
-    if (isSpeakingOrPlaying) {
-      speechQueue.add(text);
-    } else {
-      if (mounted) {
-        setState(() {
-          isSpeakingOrPlaying = true;
-        });
+    await flutterTts.stop();
+    speechQueue.clear();
+
+    if (mounted) {
+      setState(() {
+        isSpeakingOrPlaying = true;
+      });
+    }
+
+    if (_isMobileDevice()) {
+      List<String> words = text.split(' ');
+      for (String word in words) {
+        await flutterTts.speak(word);
+        await Future.delayed(const Duration(milliseconds: 300));
       }
+    } else {
       await flutterTts.speak(text);
     }
   }
 
+  bool _isMobileDevice() {
+    return kIsWeb
+        ? false
+        : (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android);
+  }
+
   void _playSymbolAudio(Map<String, dynamic> symbol) async {
+    await audioPlayer.stop();
+    await flutterTts.stop();
+
     String? audioUrl = symbol['wordAudio'];
     String text = symbol['translatedWordName'] ?? symbol['wordName'] ?? '';
 
     if (audioUrl != null && audioUrl.isNotEmpty) {
       _playAudio(audioUrl);
     } else {
-      _speak(text);
+      if (_isMobileDevice()) {
+        speechQueue.add(text);
+        if (!isSpeakingOrPlaying) {
+          _speak(speechQueue.removeFirst());
+        }
+      } else {
+        _speak(text);
+      }
     }
   }
 
   void _handleTap(Map<String, dynamic> symbol) async {
     DateTime now = DateTime.now();
-    if (lastTapTime != null && now.difference(lastTapTime!).inMilliseconds < 1) {
-      _showSnackBar("You're tapping too fast! Slow down!");
+    int minTapInterval = _isMobileDevice() ? 500 : 100;
+    if (lastTapTime != null && now.difference(lastTapTime!).inMilliseconds < minTapInterval) {
       return;
     }
     lastTapTime = now;
@@ -283,7 +317,8 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         });
       }
     } else {
-      if (widget.selectedSymbols.isEmpty || widget.selectedSymbols.last['id'] != symbol['id']) {
+      if (widget.selectedSymbols.isEmpty ||
+          widget.selectedSymbols.last['id'] != symbol['id']) {
         String word = symbol['translatedWordName'] ?? symbol['wordName'] ?? '';
 
         widget.selectedSymbols.add({
@@ -305,6 +340,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
       }
       _playSymbolAudio(symbol);
       await _incrementUsageCount(widget.boardID, symbol['id']);
+      if (mounted) {
+        setState(() {
+          isSpeakingOrPlaying = false;
+        });
+      }
     }
   }
 
@@ -431,7 +471,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         builder: (context, constraints) {
           bool showImageOnly = constraints.maxHeight < 100;
           double imageSize = showImageOnly ? constraints.maxHeight * 0.7 : constraints.maxHeight * 0.5;
-          double? fontSize = showImageOnly ? 0 : textTheme.bodyMedium?.fontSize;
+          double? fontSize = showImageOnly ? 0 : 16;
           String wordName = widget.translate ? data['translatedWordName'] ?? data['wordName'] ?? '' : data['wordName'] ?? '';
 
           return Card(

@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const GText('Settings'),
+        title: GText('Settings'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -949,8 +949,8 @@ class _LanguageSwitchTileState extends State<LanguageSwitchTile> {
             children: [
               GText(widget.title),
               const SizedBox(width: 10),
-              if (_value) const GText('Tagalog', style: TextStyle(color: Colors.green)),
-              if (!_value) const GText('English', style: TextStyle(color: Colors.green)),
+              if (_value) GText('Tagalog', style: TextStyle(color: Colors.green)),
+              if (!_value) GText('English', style: TextStyle(color: Colors.green)),
             ],
           ),
           contentPadding: EdgeInsets.zero,

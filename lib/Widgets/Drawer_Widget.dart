@@ -139,7 +139,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const GText(
+                      GText(
                         'Main Menu',
                         style: TextStyle(
                           color: Colors.white,
@@ -165,7 +165,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                                   const SizedBox(height: 10),
                                   Row(
                                     children: [
-                                      const GText(
+                                      GText(
                                         'Current Location: ',
                                         style: TextStyle(
                                           color: Colors.white,

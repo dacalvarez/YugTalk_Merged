@@ -825,7 +825,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
               ),
               actions: [
                 TextButton(
-                  child: const GText('Exit'),
+                  child: GText('Exit'),
                   onPressed: () {
                     Navigator.of(context).pop();
                     setState(() {

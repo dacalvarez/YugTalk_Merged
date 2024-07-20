@@ -195,7 +195,7 @@ class _MeModeState extends State<MeMode> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const GText('Me Mode'),
+        title: GText('Me Mode'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.lock),

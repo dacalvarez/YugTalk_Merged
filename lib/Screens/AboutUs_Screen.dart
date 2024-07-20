@@ -15,7 +15,7 @@ class AboutUsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const GText('Our Team'),
+        title: GText('Our Team'),
         backgroundColor: customPurple,
       ),
       body: Container(

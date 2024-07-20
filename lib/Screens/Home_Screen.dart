@@ -285,7 +285,10 @@ class _Home_ModState extends State<Home_Mod>
           const SizedBox(width: 8),
           GText(
             label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0,
+                fontWeight: FontWeight.bold
+            ),
           ),
         ],
       ),
