@@ -50,13 +50,13 @@
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to the camera for uploading profile photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>We need access to the microphone for recording audio.</string>
+    <string>This app needs access to microphone for audio recording.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need access to your location to provide better services.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>We need access to Bluetooth to connect to external devices.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to select profile photos.</string>
+    <string>This app needs access to photo library to upload audio files.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>We need access to Bluetooth to connect to external devices.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

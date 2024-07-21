@@ -165,8 +165,6 @@ class _AddEditImageState extends State<AddEditImage> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -198,7 +196,9 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: GText('Search'),
+                      child: GText('Search',
+                          style: TextStyle(color: Colors.white)
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -212,7 +212,9 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: GText('Camera'),
+                      child: GText('Camera',
+                          style: TextStyle(color: Colors.white)
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -226,7 +228,9 @@ class _AddEditImageState extends State<AddEditImage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: GText('Gallery'),
+                      child: GText('Gallery',
+                        style: TextStyle(color: Colors.white)
+                      ),
                     ),
                   ),
                 ],
@@ -271,7 +275,16 @@ class _AddEditImageState extends State<AddEditImage> {
 
   Widget _buildImageContainer() {
     if (_currentImage.isEmpty) {
-      return const Center(child: GText('No symbol selected'));
+      return Container(
+        width: 200,
+        height: 200,
+        child: const Center(
+          child: GText(
+            'No symbol selected',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
 
     final isSvg = _currentImage.toLowerCase().endsWith('.svg');

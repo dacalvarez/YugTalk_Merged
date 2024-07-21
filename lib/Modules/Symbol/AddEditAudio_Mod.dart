@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:gtext/gtext.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -11,11 +14,16 @@ import 'dart:io';
 class AddEditAudio extends StatefulWidget {
   final String audioPath;
   final ValueChanged<String> onAudioChanged;
+  final String? boardId;
+  final String? symbolId;
 
   const AddEditAudio({
+    Key? key,
     required this.audioPath,
     required this.onAudioChanged,
-  });
+    required this.boardId,
+    required this.symbolId,
+  }) : super(key: key);
 
   @override
   _AddEditAudioState createState() => _AddEditAudioState();
@@ -60,9 +68,20 @@ class _AddEditAudioState extends State<AddEditAudio> {
     }
   }
 
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   Future<void> _startRecording() async {
     try {
-      _recordedFilePath = 'recorded_audio.${getSupportedFileExtension()}';
+      Directory cacheDir = await getTemporaryDirectory();
+      String cachePath = cacheDir.path;
+      _recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
         codec: Codec.aacADTS,
@@ -83,9 +102,17 @@ class _AddEditAudioState extends State<AddEditAudio> {
       _stopTimer();
       setState(() {
         _isRecording = false;
-        widget.onAudioChanged(_recordedFilePath!);
-        _hasUnsavedChanges = true;
       });
+
+      if (_recordedFilePath != null) {
+        final downloadUrl = await _uploadAudioToFirebase(_recordedFilePath!);
+        if (downloadUrl.isNotEmpty) {
+          widget.onAudioChanged(downloadUrl);
+          setState(() {
+            _hasUnsavedChanges = true;
+          });
+        }
+      }
     } catch (e) {
       _showError('Failed to stop recording: $e');
     }
@@ -94,11 +121,19 @@ class _AddEditAudioState extends State<AddEditAudio> {
   Future<void> _playRecording() async {
     try {
       if (_recordedFilePath != null) {
-        await _player!.setFilePath(_recordedFilePath!);
+        if (_recordedFilePath!.startsWith('http')) {
+          // It's a URL, likely from Firestore
+          await _player!.setUrl(_recordedFilePath!);
+        } else {
+          // It's a local file path
+          await _player!.setFilePath(_recordedFilePath!);
+        }
+
         await _player!.play();
         setState(() {
           _isPlaying = true;
         });
+
         _player!.playerStateStream.listen((state) {
           if (state.processingState == ProcessingState.completed) {
             setState(() {
@@ -106,6 +141,44 @@ class _AddEditAudioState extends State<AddEditAudio> {
             });
           }
         });
+      } else {
+        // If _recordedFilePath is null, try to fetch from Firestore
+        try {
+          DocumentSnapshot doc = await FirebaseFirestore.instance
+              .collection('board')
+              .doc(widget.boardId)
+              .collection('words')
+              .doc(widget.symbolId)
+              .get();
+
+          if (doc.exists && doc.data() != null) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            String? audioUrl = data['wordAudio'] as String?;
+
+            if (audioUrl != null && audioUrl.isNotEmpty) {
+              await _player!.setUrl(audioUrl);
+              await _player!.play();
+              setState(() {
+                _isPlaying = true;
+                _recordedFilePath = audioUrl;
+              });
+
+              _player!.playerStateStream.listen((state) {
+                if (state.processingState == ProcessingState.completed) {
+                  setState(() {
+                    _isPlaying = false;
+                  });
+                }
+              });
+            } else {
+              _showError('No audio file available');
+            }
+          } else {
+            _showError('No audio file available');
+          }
+        } catch (firestoreError) {
+          _showError('Failed to fetch audio from Firestore: $firestoreError');
+        }
       }
     } catch (e) {
       _showError('Failed to play recording: $e');
@@ -126,11 +199,17 @@ class _AddEditAudioState extends State<AddEditAudio> {
   Future<void> _uploadAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result != null) {
-      setState(() {
-        _recordedFilePath = result.files.single.path;
-        widget.onAudioChanged(_recordedFilePath!);
-        _hasUnsavedChanges = true;
-      });
+      final filePath = result.files.single.path;
+      if (filePath != null) {
+        final downloadUrl = await _uploadAudioToFirebase(filePath);
+        if (downloadUrl.isNotEmpty) {
+          setState(() {
+            _recordedFilePath = downloadUrl;
+            widget.onAudioChanged(_recordedFilePath!);
+            _hasUnsavedChanges = true;
+          });
+        }
+      }
     }
   }
 
@@ -153,6 +232,36 @@ class _AddEditAudioState extends State<AddEditAudio> {
       ),
     );
     if (confirmDelete == true) {
+      if (_recordedFilePath != null && _recordedFilePath!.startsWith('https://')) {
+        try {
+          // Delete from Firebase Storage
+          final ref = FirebaseStorage.instance.refFromURL(_recordedFilePath!);
+          await ref.delete();
+
+          // Update Firestore only if boardId and symbolId are not null
+          if (widget.boardId != null && widget.symbolId != null) {
+            try {
+              await FirebaseFirestore.instance
+                  .collection('board')
+                  .doc(widget.boardId)
+                  .collection('words')
+                  .doc(widget.symbolId)
+                  .update({'wordAudio': ''});
+            } catch (firestoreError) {
+              print('Failed to update Firestore: $firestoreError');
+              // If the document doesn't exist, we can ignore this error
+              if (firestoreError is! FirebaseException || firestoreError.code != 'not-found') {
+                throw firestoreError;  // Re-throw if it's not a 'not-found' error
+              }
+            }
+          }
+
+          _showSuccessMessage('Audio deleted successfully');
+        } catch (e) {
+          _showError('Failed to delete audio: $e');
+          return;
+        }
+      }
       setState(() {
         _recordedFilePath = null;
         widget.onAudioChanged('');
@@ -160,6 +269,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       });
     }
   }
+
 
   String getSupportedFileExtension() {
     if (Platform.isAndroid || Platform.isIOS) {
@@ -176,6 +286,36 @@ class _AddEditAudioState extends State<AddEditAudio> {
         backgroundColor: Colors.red,
       ),
     );
+  }
+
+  Future<String> _uploadAudioToFirebase(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('File does not exist');
+      }
+      final fileName = filePath.split('/').last;
+      final destination = 'media/audio/$fileName';
+      final ref = FirebaseStorage.instance.ref(destination);
+      final uploadTask = ref.putFile(file);
+      final snapshot = await uploadTask.whenComplete(() {});
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      // Update Firestore with the new audio URL
+      await FirebaseFirestore.instance
+          .collection('board')
+          .doc(widget.boardId)
+          .collection('words')
+          .doc(widget.symbolId)
+          .update({'wordAudio': downloadUrl});
+
+      widget.onAudioChanged(downloadUrl);  // Use the callback here
+
+      return downloadUrl;
+    } catch (e) {
+      _showError('Failed to upload audio: $e');
+      return '';
+    }
   }
 
   void _confirmCancel() {
@@ -239,14 +379,22 @@ class _AddEditAudioState extends State<AddEditAudio> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_recordedFilePath != null)
+            if (_isRecording)
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.grey[200],
+                child: GText('Recording in progress...'),
+              )
+            else if (_recordedFilePath != null)
               Container(
                 padding: const EdgeInsets.all(10),
                 color: Colors.grey[200],
                 child: GText('Recorded audio data available.'),
               ),
             const SizedBox(height: 10),
-            if (_recordedFilePath != null) ...[
+            if (_isRecording) ...[
+              _buildRecordStopButtons(),
+            ] else if (_recordedFilePath != null) ...[
               _buildPlayButton(),
               const SizedBox(height: 10),
               _buildDeleteButton(),
@@ -321,23 +469,45 @@ class _AddEditAudioState extends State<AddEditAudio> {
   }
 
   Widget _buildRecordStopButtons() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isRecording ? Colors.red[700] : Colors.red,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
-            onPressed: _isRecording ? _stopRecording : _startRecording,
-            child: GText(
-              _isRecording ? 'Stop' : 'Record',
-              style: const TextStyle(color: Colors.white),
+          ),
+          onPressed: _isRecording ? _stopRecording : _startRecording,
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: [
+                GText(
+                  _isRecording ? 'Recording' : 'Record',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                if (_isRecording)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: GText(
+                      'Press to stop recording',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
+        if (_isRecording)
+          Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: GText(
+              'Recording time: ${_recordDuration}s',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
       ],
     );
   }
@@ -383,13 +553,15 @@ class _AddEditAudioState extends State<AddEditAudio> {
   }
 }
 
-void showAddEditAudioDialog(BuildContext context, String wordAudio, ValueChanged<String> onAudioChanged) {
+void showAddEditAudioDialog(BuildContext context, String wordAudio, ValueChanged<String> onAudioChanged, {required String boardId, required String symbolId}) {
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) => AddEditAudio(
       audioPath: wordAudio,
       onAudioChanged: onAudioChanged,
+      boardId: boardId,
+      symbolId: symbolId,
     ),
   );
 }

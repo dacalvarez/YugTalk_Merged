@@ -99,7 +99,7 @@ class _PopupFormModState extends State<PopupFormMod> {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.grey.shade300;
     Color borderColor = isDarkMode ? Colors.white : Colors.black;
-    Color innerBackgroundColor = isDarkMode ? Colors.black : Colors.white;
+    Color innerBackgroundColor = isDarkMode ? Colors.black54 : Colors.white;
     Color textColor = isDarkMode ? Colors.white : Colors.black;
 
     return Dialog(

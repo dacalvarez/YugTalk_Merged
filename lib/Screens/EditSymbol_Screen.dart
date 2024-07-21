@@ -278,15 +278,21 @@ class _EditSymbolState extends State<EditSymbol> {
           _buildListTile(
             title: 'Audio',
             subtitle: wordAudio.isEmpty ? 'No audio recorded' : 'Audio recorded',
-            onTap: () => showAddEditAudioDialog(context, wordAudio, (newAudio) {
-              setState(() {
-                if (wordAudio != newAudio) {
-                  _deleteFileFromStorage(wordAudio);
-                }
-                wordAudio = newAudio;
-                _hasUnsavedChanges = true;
-              });
-            }),
+            onTap: () => showAddEditAudioDialog(
+              context,
+              wordAudio,
+                  (newAudio) {
+                setState(() {
+                  if (wordAudio != newAudio) {
+                    _deleteFileFromStorage(wordAudio);
+                  }
+                  wordAudio = newAudio;
+                  _hasUnsavedChanges = true;
+                });
+              },
+              boardId: widget.boardId,
+              symbolId: widget.symbolId,
+            ),
           ),
           _buildListTile(
             title: 'Video',
@@ -457,9 +463,9 @@ class _EditSymbolState extends State<EditSymbol> {
         final ref = FirebaseStorage.instance.refFromURL(imagePath);
         await ref.delete();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        /*ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: GText('Error deleting file from storage: $e')),
-        );
+        );*/
       }
     }
   }

@@ -36,95 +36,98 @@ class _MoreOptionsState extends State<MoreOptions> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDarkMode ? Colors.white : Colors.black;
+    final fontSize = Theme.of(context).textTheme.displaySmall?.fontSize;
 
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
       ),
-      child: Container(
-        width: 350, // Increase the width of the dialog
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            GText(
-              'More Options',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      text: 'Switch language to ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                      children: <TextSpan>[
-                        TextSpan(
-                          text: getOppositeLanguage(),
-                          style: const TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: translate,
-                    onChanged: (bool value) {
-                      setState(() {
-                        translate = value;
-                      });
-                    },
-                  ),
-                ],
+      child: SingleChildScrollView( // Wrap with SingleChildScrollView
+        child: Container(
+          width: 350, // Increase the width of the dialog
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              GText(
+                'More Options',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
-            ListTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      text: 'Symbol usage counter: ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                      children: <TextSpan>[
-                        TextSpan(
-                          text: incrementUsageCount ? 'On' : 'Off',
-                          style: const TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: incrementUsageCount,
-                    onChanged: (bool value) {
-                      setState(() {
-                        incrementUsageCount = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: TextButton(
-                child: GText('Exit'),
-                onPressed: () {
-                  Navigator.of(context).pop({'translate': translate, 'incrementUsageCount': incrementUsageCount});
+              const SizedBox(height: 20),
+              _buildSwitchTile(
+                'Switch language to ',
+                getOppositeLanguage(),
+                translate,
+                    (bool value) {
+                  setState(() {
+                    translate = value;
+                  });
                 },
+                textColor,
+                fontSize,
+              ),
+              _buildSwitchTile(
+                'Symbol usage counter: ',
+                incrementUsageCount ? 'On' : 'Off',
+                incrementUsageCount,
+                    (bool value) {
+                  setState(() {
+                    incrementUsageCount = value;
+                  });
+                },
+                textColor,
+                fontSize,
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: TextButton(
+                  child: GText('Exit'),
+                  onPressed: () {
+                    Navigator.of(context).pop({'translate': translate, 'incrementUsageCount': incrementUsageCount});
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile(String title, String value, bool switchValue, Function(bool) onChanged, Color textColor, double? fontSize) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                text: title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                  fontSize: fontSize,
+                ),
+                children: <TextSpan>[
+                  TextSpan(
+                    text: value,
+                    style: TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: fontSize,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          Switch(
+            value: switchValue,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

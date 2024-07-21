@@ -462,8 +462,6 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   }
 
   Widget _buildSymbolContainer(Map<String, dynamic> data, double cellSize) {
-    final textTheme = Theme.of(context).textTheme;
-
     return SizedBox(
       width: cellSize,
       height: cellSize,
@@ -473,6 +471,7 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
           double imageSize = showImageOnly ? constraints.maxHeight * 0.7 : constraints.maxHeight * 0.5;
           double? fontSize = showImageOnly ? 0 : 16;
           String wordName = widget.translate ? data['translatedWordName'] ?? data['wordName'] ?? '' : data['wordName'] ?? '';
+          Color textColor = _getTextColorForCategory(data['wordCategory'] ?? '');
 
           return Card(
             color: _getColorForCategory(data['wordCategory'] ?? ''),
@@ -493,7 +492,10 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
                       children: [
                         Text(
                           wordName,
-                          style: TextStyle(fontSize: fontSize),
+                          style: TextStyle(
+                              fontSize: fontSize,
+                              color: textColor
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         if (data.containsKey('isLinked') && data['isLinked'] != null)
@@ -573,6 +575,10 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
         },
       );
     }
+  }
+
+  Color _getTextColorForCategory(String category) {
+    return category.toLowerCase() == 'conjunctions' ? Colors.black54 : Colors.white;
   }
 
   Color _getColorForCategory(String category) {

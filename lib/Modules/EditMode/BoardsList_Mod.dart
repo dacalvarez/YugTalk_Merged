@@ -338,7 +338,7 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title:  GText('Confirm Delete'),
+            title: GText('Confirm Delete'),
             content: GText('Are you sure you want to delete this board?'),
             actions: <Widget>[
               TextButton(
@@ -350,31 +350,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                 onPressed: () async {
                   Navigator.of(context).pop();
                   final boardID = board['id'];
-                  final boardDoc = await FirebaseFirestore.instance.collection('board').doc(boardID).get();
-                  final boardData = boardDoc.data();
 
                   if (board['isDefault']) {
-                    await _duplicateAndHideDefaultBoard(index, board['name'], delete: true);
+                    await _hideDefaultBoard(boardID);
                   } else {
-                    if (boardData != null) {
-                      try {
-                        await FirebaseFirestore.instance.collection('board').doc(boardID).delete();
-                        setState(() {
-                          _fetchBoards();
-                        });
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: GText('Board deleted successfully')),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: GText('Failed to delete board: $e')),
-                          );
-                        }
-                      }
-                    }
+                    await _deleteNonDefaultBoard(boardID);
                   }
                 },
               ),
@@ -382,6 +362,48 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           );
         },
       );
+    }
+  }
+
+  Future<void> _hideDefaultBoard(String boardID) async {
+    try {
+      await FirebaseFirestore.instance.collection('board').doc(boardID).update({
+        'hiddenBy': FieldValue.arrayUnion([widget.userID])
+      });
+      setState(() {
+        _fetchBoards();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: GText('Board hidden successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: GText('Failed to hide board: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteNonDefaultBoard(String boardID) async {
+    try {
+      await FirebaseFirestore.instance.collection('board').doc(boardID).delete();
+      setState(() {
+        _fetchBoards();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: GText('Board deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: GText('Failed to delete board: $e')),
+        );
+      }
     }
   }
 

@@ -72,6 +72,8 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _fetchSymbols(),
       builder: (context, snapshot) {
@@ -106,7 +108,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                   height: containerHeight,
                   padding: const EdgeInsets.all(5), // Thinner padding
                   decoration: BoxDecoration(
-                    color: Colors.grey[300], // Darker grey
+                    color: isDarkMode ? Colors.grey[900] : Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: GridView.builder(
@@ -140,7 +142,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                           width: cellSize,
                           height: cellSize,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: _buildSymbolContainer(symbol, cellSize),
@@ -157,6 +159,37 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
     );
   }
 
+  Color _getColorForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'nouns':
+        return const Color(0xffffb33f);
+      case 'pronouns':
+        return const Color(0xffffe682);
+      case 'verbs':
+        return const Color(0xff9ee281);
+      case 'adjectives':
+        return const Color(0xff69c8ff);
+      case 'prepositions':
+      case 'social words':
+        return const Color(0xffff8cd2);
+      case 'questions':
+        return const Color(0xffa77dff);
+      case 'negation':
+      case 'important words':
+        return const Color(0xffff5150);
+      case 'adverbs':
+        return const Color(0xffc19b84);
+      case 'conjunctions':
+        return const Color(0xffffffff);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getTextColorForCategory(String category) {
+    return category.toLowerCase() == 'conjunctions' ? Colors.black54 : Colors.white;
+  }
+
   Widget _buildSymbolContainer(Map<String, dynamic> data, double cellSize) {
     return SizedBox(
       width: cellSize,
@@ -165,7 +198,8 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
         builder: (context, constraints) {
           bool showImageOnly = constraints.maxHeight < 100;
           double imageSize = showImageOnly ? constraints.maxHeight * 0.7 : constraints.maxHeight * 0.5;
-          double fontSize = showImageOnly ? 0 : 24;
+          double? fontSize = showImageOnly ? 0 : 16;
+          Color textColor = _getTextColorForCategory(data['wordCategory'] ?? '');
 
           return Card(
             color: _getColorForCategory(data['wordCategory'] ?? ''),
@@ -185,9 +219,9 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: GText(
+                          child: Text(
                             data['wordName'] ?? '',
-                            style: TextStyle(fontSize: fontSize),
+                            style: TextStyle(fontSize: fontSize, color: textColor),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -254,32 +288,5 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
           ),
       ],
     );
-  }
-
-  Color _getColorForCategory(String category) {
-    switch (category.toLowerCase()) {
-      case 'nouns':
-        return const Color(0xffffb33f);
-      case 'pronouns':
-        return const Color(0xffffe682);
-      case 'verbs':
-        return const Color(0xff9ee281);
-      case 'adjectives':
-        return const Color(0xff69c8ff);
-      case 'prepositions':
-      case 'social words':
-        return const Color(0xffff8cd2);
-      case 'questions':
-        return const Color(0xffa77dff);
-      case 'negation':
-      case 'important words':
-        return const Color(0xffff5150);
-      case 'adverbs':
-        return const Color(0xffc19b84);
-      case 'conjunctions':
-        return const Color(0xffffffff);
-      default:
-        return const Color.fromARGB(255, 238, 238, 238);
-    }
   }
 }
