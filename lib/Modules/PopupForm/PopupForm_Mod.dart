@@ -59,8 +59,7 @@ class _PopupFormModState extends State<PopupFormMod> {
           wordImage = documentSnapshot['wordImage'];
 
           if (wordVideo.isNotEmpty) {
-            //_videoPlayerController = VideoPlayerController.network(wordVideo)
-            _videoPlayerController = VideoPlayerController.networkUrl(wordVideo as Uri)
+            _videoPlayerController = VideoPlayerController.network(wordVideo)
               ..initialize().then((_) {
                 setState(() {});
               }).catchError((_) {
@@ -97,11 +96,17 @@ class _PopupFormModState extends State<PopupFormMod> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    Color backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.grey.shade300;
+    Color borderColor = isDarkMode ? Colors.white : Colors.black;
+    Color innerBackgroundColor = isDarkMode ? Colors.black : Colors.white;
+    Color textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
       ),
-      backgroundColor: Colors.grey.shade300,
+      backgroundColor: backgroundColor,
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Container(
@@ -113,7 +118,7 @@ class _PopupFormModState extends State<PopupFormMod> {
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close, color: textColor),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -128,28 +133,30 @@ class _PopupFormModState extends State<PopupFormMod> {
                       height: MediaQuery.of(context).size.height * 0.35,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10.0),
-                        color: _videoPlayerController != null && _videoPlayerController!.value.isInitialized ? Colors.black : Colors.white,
-                        border: Border.all(color: Colors.black, width: 2),
+                        color: _videoPlayerController != null && _videoPlayerController!.value.isInitialized
+                            ? Colors.black
+                            : innerBackgroundColor,
+                        border: Border.all(color: borderColor, width: 2),
                       ),
                       child: _videoPlayerController != null &&
-                              _videoPlayerController!.value.isInitialized
+                          _videoPlayerController!.value.isInitialized
                           ? Stack(
-                              children: [
-                                GestureDetector(
-                                  child: VideoPlayer(_videoPlayerController!),
-                                ),
-                                _buildControls(),
-                              ],
-                            )
-                          : const Center(
-                              child: GText(
-                                'No video data',
-                                style: TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
+                        children: [
+                          GestureDetector(
+                            child: VideoPlayer(_videoPlayerController!),
+                          ),
+                          _buildControls(),
+                        ],
+                      )
+                          : Center(
+                        child: GText(
+                          'No video data',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: textColor,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -160,25 +167,38 @@ class _PopupFormModState extends State<PopupFormMod> {
                         width: MediaQuery.of(context).size.height * 0.17,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 2),
+                          color: innerBackgroundColor,
+                          border: Border.all(color: borderColor, width: 2),
                         ),
                         child: wordImage.isNotEmpty
                             ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10.0),
-                                child: Image.network(
-                                  wordImage,
-                                  fit: BoxFit.cover,
+                          borderRadius: BorderRadius.circular(10.0),
+                          child: Image.network(
+                            wordImage,
+                            fit: BoxFit.cover,
+                            headers: const {
+                              "Content-Type": "image/jpeg",
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              print('Error loading image: $error');
+                              return Center(
+                                child: Text(
+                                  'Error loading image',
+                                  style: TextStyle(color: textColor),
                                 ),
-                              )
-                            : const Center(
-                                child: GText(
-                                  'Symbol Container',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              );
+                            },
+                          ),
+                        )
+                            : Center(
+                          child: GText(
+                            'Symbol Container',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Container(
@@ -186,11 +206,11 @@ class _PopupFormModState extends State<PopupFormMod> {
                         width: MediaQuery.of(context).size.height * 0.17,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 2),
+                          color: innerBackgroundColor,
+                          border: Border.all(color: borderColor, width: 2),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.volume_up, color: Colors.black, size: 55),
+                          icon: Icon(Icons.volume_up, color: textColor, size: 55),
                           onPressed: _playAudio,
                         ),
                       ),
@@ -204,17 +224,18 @@ class _PopupFormModState extends State<PopupFormMod> {
                 height: MediaQuery.of(context).size.height * 0.25,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: innerBackgroundColor,
                   borderRadius: BorderRadius.circular(10.0),
-                  border: Border.all(color: Colors.black, width: 2),
+                  border: Border.all(color: borderColor, width: 2),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       wordName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -224,6 +245,7 @@ class _PopupFormModState extends State<PopupFormMod> {
                           wordDesc.isNotEmpty ? wordDesc : 'No description for this symbol',
                           style: TextStyle(
                             fontStyle: wordDesc.isNotEmpty ? FontStyle.normal : FontStyle.italic,
+                            color: textColor,
                           ),
                         ),
                       ),
