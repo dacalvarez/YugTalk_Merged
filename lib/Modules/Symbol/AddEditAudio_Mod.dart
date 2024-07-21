@@ -81,12 +81,10 @@ class _AddEditAudioState extends State<AddEditAudio> {
     try {
       Directory cacheDir = await getTemporaryDirectory();
       String cachePath = cacheDir.path;
-      _recordedFilePath = '$cachePath/recorded_audio.m4a';
-      //_recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
+      _recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
         codec: Codec.aacADTS,
-        //audioSource: AudioSource.defaultSource,
       );
       setState(() {
         _isRecording = true;
@@ -195,7 +193,11 @@ class _AddEditAudioState extends State<AddEditAudio> {
   }
 
   Future<void> _uploadAudio() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['wav', 'aiff', 'alac', 'flac', 'mp3', 'aac', 'wma', 'ogg'],
+    );
+
     if (result != null) {
       final filePath = result.files.single.path;
       if (filePath != null) {

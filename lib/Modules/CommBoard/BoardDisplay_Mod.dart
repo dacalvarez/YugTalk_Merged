@@ -298,6 +298,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
   }
 
   void _handleTap(Map<String, dynamic> symbol) async {
+
+    if (symbol['id'] == null) {
+      return;
+    }
+
     DateTime now = DateTime.now();
     int minTapInterval = _isMobileDevice() ? 500 : 100;
     if (lastTapTime != null && now.difference(lastTapTime!).inMilliseconds < minTapInterval) {
@@ -425,13 +430,11 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
               itemBuilder: (context, index) {
                 final symbol = orderedSymbols[index];
                 return GestureDetector(
-                  onTap: () => _handleTap(symbol),
-                  onLongPress: () async {
-                    if (symbol['id'] != null) {
-                      await _incrementUsageCount(widget.boardID, symbol['id']);
-                      showPopupFormMod(context, widget.boardID, symbol['id']);
-                    }
-                  },
+                  onTap: symbol['id'] != null ? () => _handleTap(symbol) : null,
+                  onLongPress: symbol['id'] != null ? () async {
+                    await _incrementUsageCount(widget.boardID, symbol['id']);
+                    showPopupFormMod(context, widget.boardID, symbol['id']);
+                  } : null,
                   child: Container(
                     width: cellSize,
                     height: cellSize,

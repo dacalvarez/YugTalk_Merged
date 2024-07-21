@@ -65,5 +65,9 @@
 	<string>We need access to speech recognition for converting speech to text.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
     <string>This app needs access to save PDF files.</string>
+    <key>NSDocumentDirectoryUsageDescription</key>
+    <string>We need access to your documents to save files.</string>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Access is required to allow you to upload media</string>
 </dict>
 </plist>
