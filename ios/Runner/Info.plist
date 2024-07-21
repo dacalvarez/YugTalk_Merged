@@ -69,5 +69,9 @@
     <string>We need access to your documents to save files.</string>
     <key>NSAppleMusicUsageDescription</key>
     <string>Access is required to allow you to upload media</string>
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
 </dict>
 </plist>

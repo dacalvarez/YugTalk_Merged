@@ -79,9 +79,16 @@ class _AddEditAudioState extends State<AddEditAudio> {
 
   Future<void> _startRecording() async {
     try {
-      Directory cacheDir = await getTemporaryDirectory();
-      String cachePath = cacheDir.path;
-      _recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
+      late String filePath;
+      if (Platform.isIOS) {
+        Directory appDocDir = await getApplicationDocumentsDirectory();
+        filePath = '${appDocDir.path}/recorded_audio.${getSupportedFileExtension()}';
+      } else {
+        Directory cacheDir = await getTemporaryDirectory();
+        filePath = '${cacheDir.path}/recorded_audio.${getSupportedFileExtension()}';
+      }
+
+      _recordedFilePath = filePath;
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
         codec: Codec.aacADTS,
