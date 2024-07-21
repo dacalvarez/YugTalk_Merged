@@ -81,10 +81,12 @@ class _AddEditAudioState extends State<AddEditAudio> {
     try {
       Directory cacheDir = await getTemporaryDirectory();
       String cachePath = cacheDir.path;
-      _recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
+      _recordedFilePath = '$cachePath/recorded_audio.m4a';
+      //_recordedFilePath = '$cachePath/recorded_audio.${getSupportedFileExtension()}';
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
         codec: Codec.aacADTS,
+        //audioSource: AudioSource.defaultSource,
       );
       setState(() {
         _isRecording = true;
@@ -102,16 +104,12 @@ class _AddEditAudioState extends State<AddEditAudio> {
       _stopTimer();
       setState(() {
         _isRecording = false;
+        _hasUnsavedChanges = true;
       });
 
+      // No need to upload to Firebase here
       if (_recordedFilePath != null) {
-        final downloadUrl = await _uploadAudioToFirebase(_recordedFilePath!);
-        if (downloadUrl.isNotEmpty) {
-          widget.onAudioChanged(downloadUrl);
-          setState(() {
-            _hasUnsavedChanges = true;
-          });
-        }
+        widget.onAudioChanged(_recordedFilePath!);
       }
     } catch (e) {
       _showError('Failed to stop recording: $e');
@@ -201,14 +199,11 @@ class _AddEditAudioState extends State<AddEditAudio> {
     if (result != null) {
       final filePath = result.files.single.path;
       if (filePath != null) {
-        final downloadUrl = await _uploadAudioToFirebase(filePath);
-        if (downloadUrl.isNotEmpty) {
-          setState(() {
-            _recordedFilePath = downloadUrl;
-            widget.onAudioChanged(_recordedFilePath!);
-            _hasUnsavedChanges = true;
-          });
-        }
+        setState(() {
+          _recordedFilePath = filePath;
+          widget.onAudioChanged(_recordedFilePath!);
+          _hasUnsavedChanges = true;
+        });
       }
     }
   }
@@ -232,6 +227,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       ),
     );
     if (confirmDelete == true) {
+      _showSuccessMessage('Audio deleted successfully');
       if (_recordedFilePath != null && _recordedFilePath!.startsWith('https://')) {
         try {
           // Delete from Firebase Storage
@@ -255,8 +251,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
               }
             }
           }
-
-          _showSuccessMessage('Audio deleted successfully');
         } catch (e) {
           _showError('Failed to delete audio: $e');
           return;
@@ -372,38 +366,46 @@ class _AddEditAudioState extends State<AddEditAudio> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: GText('Audio'),
-      content: Container(
-        padding: const EdgeInsets.all(10),
-        height: MediaQuery.of(context).size.height * 0.20,
-        width: MediaQuery.of(context).size.width * 0.25,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_isRecording)
-              Container(
-                padding: const EdgeInsets.all(10),
-                color: Colors.grey[200],
-                child: GText('Recording in progress...'),
-              )
-            else if (_recordedFilePath != null)
-              Container(
-                padding: const EdgeInsets.all(10),
-                color: Colors.grey[200],
-                child: GText('Recorded audio data available.'),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7, // Set a maximum height
+          maxWidth: MediaQuery.of(context).size.width * 0.25,
+        ),
+        child: IntrinsicHeight(
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isRecording)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      color: Colors.grey[200],
+                      child: GText('Recording in progress...'),
+                    )
+                  else if (_recordedFilePath != null)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      color: Colors.grey[200],
+                      child: GText('Recorded audio data available.'),
+                    ),
+                  const SizedBox(height: 10),
+                  if (_isRecording) ...[
+                    _buildRecordStopButtons(),
+                  ] else if (_recordedFilePath != null) ...[
+                    _buildPlayButton(),
+                    const SizedBox(height: 10),
+                    _buildDeleteButton(),
+                  ] else ...[
+                    _buildRecordStopButtons(),
+                    const SizedBox(height: 10),
+                    _buildUploadButton(),
+                  ],
+                ],
               ),
-            const SizedBox(height: 10),
-            if (_isRecording) ...[
-              _buildRecordStopButtons(),
-            ] else if (_recordedFilePath != null) ...[
-              _buildPlayButton(),
-              const SizedBox(height: 10),
-              _buildDeleteButton(),
-            ] else ...[
-              _buildRecordStopButtons(),
-              const SizedBox(height: 10),
-              _buildUploadButton(),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
       actions: [
@@ -486,14 +488,14 @@ class _AddEditAudioState extends State<AddEditAudio> {
               children: [
                 GText(
                   _isRecording ? 'Recording' : 'Record',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Colors.white),
                 ),
                 if (_isRecording)
                   Padding(
                     padding: EdgeInsets.only(top: 4),
                     child: GText(
                       'Press to stop recording',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
               ],
