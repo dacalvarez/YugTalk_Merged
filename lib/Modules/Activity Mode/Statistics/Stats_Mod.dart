@@ -228,8 +228,8 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                         if (_selectedCategory != 'All Categories') {
                           filteredWords = words
                               .where((word) =>
-                                  word.category.toLowerCase() ==
-                                  _selectedCategory.toLowerCase())
+                          word.category.toLowerCase() ==
+                              _selectedCategory.toLowerCase())
                               .toList();
                         } else {
                           filteredWords = List.from(words);
@@ -247,12 +247,12 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                           filteredWords = words.where((word) {
                             return word.datesOfUsage.any((usage) => usage.values
                                 .any((lfList) => lfList.any((lf) =>
-                                    lf.location
-                                        .toString()
-                                        .split('.')
-                                        .last
-                                        .toLowerCase() ==
-                                    _selectedLocation.toLowerCase())));
+                            lf.location
+                                .toString()
+                                .split('.')
+                                .last
+                                .toLowerCase() ==
+                                _selectedLocation.toLowerCase())));
                           }).toList();
                         } else {
                           filteredWords = List.from(words);
@@ -272,7 +272,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                       scrollDirection: Axis.vertical,
                       child: ConstrainedBox(
                         constraints:
-                            BoxConstraints(minWidth: constraints.maxWidth),
+                        BoxConstraints(minWidth: constraints.maxWidth),
                         child: DataTable(
                           columnSpacing: 16.0,
                           headingRowHeight: 56.0,
@@ -283,7 +283,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                               label: buildSortableHeader(
                                 'Word',
                                 0,
-                                () {
+                                    () {
                                   setState(() {
                                     _sortAscending = !_sortAscending;
                                     _sortColumnIndex = 0;
@@ -302,7 +302,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                               label: buildSortableHeader(
                                 'Category',
                                 1,
-                                () {
+                                    () {
                                   setState(() {
                                     _sortAscending = !_sortAscending;
                                     _sortColumnIndex = 1;
@@ -321,7 +321,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                               label: buildSortableHeader(
                                 'Frequency',
                                 2,
-                                () {
+                                    () {
                                   setState(() {
                                     _sortAscending = !_sortAscending;
                                     _sortColumnIndex = 2;
@@ -342,7 +342,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                               label: buildSortableHeader(
                                 'Date Range',
                                 3,
-                                () {
+                                    () {
                                   setState(() {
                                     _sortAscending = !_sortAscending;
                                     _sortColumnIndex = 3;
@@ -370,53 +370,53 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                           rows: filteredWords
                               .map(
                                 (word) => DataRow(
-                                  cells: [
-                                    DataCell(
-                                      GText(word.word),
-                                    ),
-                                    DataCell(
-                                      GText(word.category),
-                                    ),
-                                    DataCell(
-                                      GText(word.dailyFrequency.toString()),
-                                    ),
-                                    DataCell(
-                                      GText(
-                                        '${word.datesOfUsage.first.keys.first.toString().split(' ')[0]} - ${word.datesOfUsage.last.keys.first.toString().split(' ')[0]}',
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: _selectedLocation ==
-                                                'All Locations'
-                                            ? _aggregateLocationFrequencies(
-                                                    word, _selectedLocation)
-                                                .map((locationFrequency) =>
-                                                    GText(
-                                                      '${locationFrequency.location}: ${locationFrequency.frequency}',
-                                                    ))
-                                                .toList()
-                                            : _aggregateLocationFrequencies(
-                                                    word, _selectedLocation)
-                                                .map((locationFrequency) {
-                                                if (locationFrequency.location
-                                                        .toLowerCase() ==
-                                                    _selectedLocation
-                                                        .toLowerCase()) {
-                                                  return GText(
-                                                    '${locationFrequency.location}: ${locationFrequency.frequency}',
-                                                  );
-                                                } else {
-                                                  return const SizedBox();
-                                                }
-                                              }).toList(),
-                                      ),
-                                    ),
-                                  ],
+                              cells: [
+                                DataCell(
+                                  GText(word.word),
                                 ),
-                              )
+                                DataCell(
+                                  GText(word.category),
+                                ),
+                                DataCell(
+                                  GText(word.dailyFrequency.toString()),
+                                ),
+                                DataCell(
+                                  GText(
+                                    '${word.datesOfUsage.first.keys.first.toString().split(' ')[0]} - ${word.datesOfUsage.last.keys.first.toString().split(' ')[0]}',
+                                  ),
+                                ),
+                                DataCell(
+                                  Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: _selectedLocation ==
+                                        'All Locations'
+                                        ? _aggregateLocationFrequencies(
+                                        word, _selectedLocation)
+                                        .map((locationFrequency) =>
+                                        GText(
+                                          '${locationFrequency.location}: ${locationFrequency.frequency}',
+                                        ))
+                                        .toList()
+                                        : _aggregateLocationFrequencies(
+                                        word, _selectedLocation)
+                                        .map((locationFrequency) {
+                                      if (locationFrequency.location
+                                          .toLowerCase() ==
+                                          _selectedLocation
+                                              .toLowerCase()) {
+                                        return GText(
+                                          '${locationFrequency.location}: ${locationFrequency.frequency}',
+                                        );
+                                      } else {
+                                        return const SizedBox();
+                                      }
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                               .toList(),
                         ),
                       ),
@@ -483,9 +483,9 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
     Set<String> locations = words
         .expand(
             (word) => word.datesOfUsage.expand((usage) => usage.values.expand(
-                  (locationFrequencies) => locationFrequencies
-                      .map((lf) => lf.location.toString().split('.').last),
-                )))
+              (locationFrequencies) => locationFrequencies
+              .map((lf) => lf.location.toString().split('.').last),
+        )))
         .toSet();
     List<DropdownMenuItem<String>> items = [];
     items.add(const DropdownMenuItem(
@@ -779,11 +779,11 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                       List<Map<String, dynamic>> forms = snapshot.data!;
                       List<Map<String, dynamic>> filteredForms = forms
                           .where((form) => form['activityFormName']
-                              .toLowerCase()
-                              .contains(_popupSearchQuery.toLowerCase()))
+                          .toLowerCase()
+                          .contains(_popupSearchQuery.toLowerCase()))
                           .toList();
                       final DateFormat dateFormat =
-                          DateFormat('yyyy-MM-dd HH:mm');
+                      DateFormat('yyyy-MM-dd HH:mm');
 
                       return SingleChildScrollView(
                         scrollDirection: Axis.vertical,
@@ -807,8 +807,8 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                               ),
                               subtitle: GText(
                                 'Type: ${form['formType']}\n'
-                                'Name: ${form['name']}\n'
-                                'Date Created: ${date != null ? dateFormat.format(date) : 'N/A'}\n',
+                                    'Name: ${form['name']}\n'
+                                    'Date Created: ${date != null ? dateFormat.format(date) : 'N/A'}\n',
                               ),
                               onTap: () {
                                 Navigator.of(context).pop();
@@ -920,10 +920,10 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
           'activity_board_dropdown': activityBoards,
           'age': int.tryParse(data['age'] ?? '0') ?? 0,
           'auditory_comprehension_summary':
-              data['auditory_comprehension_summary'],
+          data['auditory_comprehension_summary'],
           'date': dateFormat.format(date),
           'expressive_communication_summary':
-              data['expressive_communication_summary'],
+          data['expressive_communication_summary'],
           'formStatus': data['formStatus'] ?? '',
           'gender': data['gender'] ?? '',
           'name': name,
@@ -943,7 +943,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
 
   void _navigateToForm(BuildContext context, ActivityForms form) {
     if (form.formType == 'PLS-5') {
-      Navigator.push(
+      /*Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => CreatePLS5Form_Widget(initialData: form),
@@ -955,7 +955,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
         MaterialPageRoute(
           builder: (context) => CreateBriganceForm_Widget(initialData: form),
         ),
-      );
+      );*/
     }
   }
 }
@@ -972,22 +972,30 @@ class GeneralStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int wordCount = wordUsages.length;
     int categoryCount = wordUsages.map((w) => w.category).toSet().length;
 
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color textColor = isDarkMode ? Colors.white : Colors.black;
 
-    return FutureBuilder<int>(
-      future: getLocationCount(),
+    return FutureBuilder<Map<String, int>>(
+      future: Future.wait([
+        getLocationCount(),
+        getTotalFormCount(),
+        getWordCount(),
+      ]).then((results) => {
+        'locations': results[0],
+        'activities': results[1],
+        'words': results[2],
+      }),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: GText('Error: ${snapshot.error}'));
         } else {
-          int locationCount = snapshot.data ?? 0;
-          int activityCount = activityForms.length;
+          int locationCount = snapshot.data?['locations'] ?? 0;
+          int activityCount = snapshot.data?['activities'] ?? 0;
+          int wordCount = snapshot.data?['words'] ?? 0;
 
           return SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
@@ -1001,8 +1009,8 @@ class GeneralStats extends StatelessWidget {
                 mainAxisSpacing: 8.0,
                 crossAxisSpacing: 8.0,
                 children: [
-                  _buildGeneralStatContainer(
-                      context, 'Words', wordCount.toString(), textColor),
+                  _buildGeneralStatContainer(context, 'Words',
+                      wordCount.toString(), textColor),
                   _buildGeneralStatContainer(context, 'Categories',
                       categoryCount.toString(), textColor),
                   _buildGeneralStatContainer(context, 'Locations',
@@ -1016,6 +1024,84 @@ class GeneralStats extends StatelessWidget {
         }
       },
     );
+  }
+
+  Future<int> getWordCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return 0;
+    }
+
+    try {
+      Set<String> uniqueWords = Set<String>();
+
+      // Fetch all boards owned by the current user
+      final boardsSnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .where('ownerID', isEqualTo: user.email)
+          .get();
+
+      for (var boardDoc in boardsSnapshot.docs) {
+        // Get the 'words' subcollection
+        final wordsCollection = boardDoc.reference.collection('words');
+        final wordsSnapshot = await wordsCollection.get();
+
+        // Add each word's ID to the set of unique words
+        for (var wordDoc in wordsSnapshot.docs) {
+          uniqueWords.add(wordDoc.id);
+        }
+      }
+
+      int totalUniqueWordCount = uniqueWords.length;
+      print('Total unique word count: $totalUniqueWordCount'); // For debugging
+      return totalUniqueWordCount;
+    } catch (e) {
+      print('Error fetching word count: $e');
+      return 0;
+    }
+  }
+
+  Future<int> getTotalFormCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return 0;
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user')
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (userDoc.docs.isEmpty) {
+        return 0;
+      }
+
+      final userId = userDoc.docs.first.id;
+
+      // Count PLS5Forms
+      final pls5Count = await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('PLS5Form')
+          .count()
+          .get();
+
+      // Count BriganceForms
+      final briganceCount = await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('BriganceForm')
+          .count()
+          .get();
+
+      // Use null-aware operators to handle potential null values
+      return (pls5Count.count ?? 0) + (briganceCount.count ?? 0);
+    } catch (e) {
+      print('Error fetching total form count: $e');
+      return 0;
+    }
   }
 
   Future<int> getLocationCount() async {
@@ -1035,7 +1121,7 @@ class GeneralStats extends StatelessWidget {
       }
 
       final userLocations =
-          userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+      userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
       if (userLocations == null) {
         return 0;
       }
@@ -1121,11 +1207,133 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     _loadItems();
   }
 
+  Future<List<Map<String, String>>> _fetchUserForms() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return [];
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user')
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (userDoc.docs.isEmpty) {
+        return [];
+      }
+
+      final userId = userDoc.docs.first.id;
+      List<Map<String, String>> forms = [];
+
+      // Fetch PLS5Forms
+      final pls5QuerySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('PLS5Form')
+          .get();
+
+      for (var doc in pls5QuerySnapshot.docs) {
+        forms.add({
+          'type': 'PLS-5',
+          'address': doc.data()['activityFormName'] ?? 'Unnamed PLS-5 Form',
+          'id': doc.id,
+          'status': doc.data()['formStatus'] ?? 'Unknown',
+        });
+      }
+
+      // Fetch BriganceForms
+      final briganceQuerySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .doc(userId)
+          .collection('BriganceForm')
+          .get();
+
+      for (var doc in briganceQuerySnapshot.docs) {
+        forms.add({
+          'type': 'Brigance',
+          'address': doc.data()['activityFormName'] ?? 'Unnamed Brigance Form',
+          'id': doc.id,
+          'status': doc.data()['formStatus'] ?? 'Unknown',
+        });
+      }
+
+      return forms;
+    } catch (e) {
+      print('Error fetching user forms: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchWordUsages() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return [];
+    }
+
+    try {
+      Map<String, Map<String, dynamic>> wordInfo = {};
+
+      // Fetch all boards owned by the current user
+      final boardsSnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .where('ownerID', isEqualTo: user.email)
+          .get();
+
+      for (var boardDoc in boardsSnapshot.docs) {
+        final wordsCollection = boardDoc.reference.collection('words');
+        final wordsSnapshot = await wordsCollection.get();
+
+        for (var wordDoc in wordsSnapshot.docs) {
+          String wordId = wordDoc.id;
+          String wordName = wordDoc.data()['wordName'] ?? 'Unknown';
+
+          if (!wordInfo.containsKey(wordId)) {
+            wordInfo[wordId] = {'wordName': wordName, 'count': 0};
+          }
+          wordInfo[wordId]!['count'] = (wordInfo[wordId]!['count'] as int) + 1;
+        }
+      }
+
+      // Convert the word info to the format we need
+      List<Map<String, dynamic>> wordData = wordInfo.entries.map((entry) => {
+        'word': entry.key,
+        'wordName': entry.value['wordName'],
+        'count': entry.value['count'],
+      }).toList();
+
+      // Sort the words by count in descending order
+      wordData.sort((a, b) => b['count'].compareTo(a['count']));
+
+      return wordData;
+    } catch (e) {
+      print('Error fetching word usages: $e');
+      return [];
+    }
+  }
+
   void _loadItems() async {
-    if (widget.title == 'Locations') {
+    if (widget.title == 'Words') {
+      List<Map<String, dynamic>> wordData = await _fetchWordUsages();
+      print('Loaded word data: $wordData');
+      setState(() {
+        allItems = wordData.map((word) => {
+          'address': word['wordName'] as String,
+          'count': word['count'].toString(),
+        }).toList().cast<Map<String, String>>();
+        filteredItems = allItems;
+      });
+    } else if (widget.title == 'Locations') {
       List<Map<String, String>> userLocations = await _fetchUserLocations();
       setState(() {
         allItems = userLocations;
+        filteredItems = allItems;
+      });
+    } else if (widget.title == 'Activities') {
+      List<Map<String, String>> userForms = await _fetchUserForms();
+      setState(() {
+        allItems = userForms;
         filteredItems = allItems;
       });
     } else {
@@ -1152,7 +1360,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       }
 
       final userLocations =
-          userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+      userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
       if (userLocations == null) {
         return [];
       }
@@ -1178,16 +1386,16 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       if (category == 'All') {
         filteredItems = allItems
             .where((item) => item['address']!
-                .toLowerCase()
-                .contains(_popupSearchQuery.toLowerCase()))
+            .toLowerCase()
+            .contains(_popupSearchQuery.toLowerCase()))
             .toList();
       } else {
         filteredItems = allItems
             .where((item) =>
-                item['type'] == category &&
-                item['address']!
-                    .toLowerCase()
-                    .contains(_popupSearchQuery.toLowerCase()))
+        item['type'] == category &&
+            item['address']!
+                .toLowerCase()
+                .contains(_popupSearchQuery.toLowerCase()))
             .toList();
       }
     });
@@ -1197,10 +1405,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     List<Map<String, String>> items;
     switch (widget.title) {
       case 'Words':
-        items = generateDummyData()
-            .map((wordUsage) =>
-                {'address': wordUsage.word, 'category': wordUsage.category})
-            .toList();
+        items = allItems;
         break;
       case 'Categories':
         items = generateDummyData()
@@ -1212,10 +1417,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         items = allItems;
         break;
       case 'Activities':
-        items = activityFormsData
-            .map((form) =>
-                {'address': form.activityFormName, 'type': form.formType})
-            .toList();
+        items = allItems;
         break;
       default:
         items = [];
@@ -1223,8 +1425,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
     return items
         .where((item) => item['address']!
-            .toLowerCase()
-            .contains(_popupSearchQuery.toLowerCase()))
+        .toLowerCase()
+        .contains(_popupSearchQuery.toLowerCase()))
         .toList();
   }
 
@@ -1247,7 +1449,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         filterLabel = 'Form Type: ';
         break;
       default:
-        return const SizedBox.shrink(); // No filter for other types
+        return const SizedBox.shrink();
     }
 
     return Row(
@@ -1272,14 +1474,14 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
               if (widget.title == 'Words') {
                 filteredItems = _filterItems()
                     .where((item) =>
-                        _selectedFilter == 'All' ||
-                        item['category'] == _selectedFilter)
+                _selectedFilter == 'All' ||
+                    item['category'] == _selectedFilter)
                     .toList();
               } else if (widget.title == 'Activities') {
                 filteredItems = _filterItems()
                     .where((item) =>
-                        _selectedFilter == 'All' ||
-                        item['type'] == _selectedFilter)
+                _selectedFilter == 'All' ||
+                    item['type'] == _selectedFilter)
                     .toList();
               } else {
                 _filterItemsByCategory(_selectedFilter);
@@ -1293,6 +1495,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    print('Building dialog. Filtered items: $filteredItems'); // Add this line
     return Dialog(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -1343,7 +1546,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text(filteredItems[index]['address']!),
-                    subtitle: Text(filteredItems[index]['type'] ?? ''),
+                    //subtitle: Text(filteredItems[index]['type'] ?? ''),
                   );
                 },
               ),
@@ -1354,7 +1557,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     );
   }
 
-  /*@override
+/*@override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Row(

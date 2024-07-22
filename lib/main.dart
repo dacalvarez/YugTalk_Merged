@@ -295,7 +295,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
               ),
               themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
               home: widget.user.emailVerified ?
-              const Home_Mod() : const Verification_Widget(),
+              const ActivityMode_Mod() : const Verification_Widget(),
             );
           },
         );

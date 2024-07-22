@@ -91,7 +91,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       _recordedFilePath = filePath;
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
-        codec: Codec.aacADTS,
+        //codec: Codec.aacADTS,
       );
       setState(() {
         _isRecording = true;
@@ -129,7 +129,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
           await _player!.setUrl(_recordedFilePath!);
         } else {
           // It's a local file path
-          await _player!.setFilePath(_recordedFilePath!);
+          await _player!.setAudioSource(AudioSource.file(_recordedFilePath!));
         }
 
         await _player!.play();
