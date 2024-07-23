@@ -250,7 +250,10 @@ class _AddEditImageState extends State<AddEditImage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: GText('Delete'),
+                        child: GText(
+                            'Delete',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ),
                   ],

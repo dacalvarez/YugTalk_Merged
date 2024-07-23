@@ -141,81 +141,83 @@ class _AddEditVideoState extends State<AddEditVideo> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    final dialogHeight = screenHeight * 0.35;
-    final dialogWidth = screenWidth * 0.35;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       child: AlertDialog(
         title: GText('Select Video'),
-        content: SizedBox(
-          height: dialogHeight,
-          width: dialogWidth,
-          child: Column(
-            children: [
-              Expanded(
-                child: Container(
+        content: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: screenHeight * 0.5,
+              maxWidth: screenWidth * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
                   width: double.infinity,
-                  color: Colors.grey[300],
+                  color: isDarkMode ? Colors.transparent : Colors.grey[200],
                   child: Center(
                     child: _currentVideo.isEmpty
                         ? GText('No video selected')
                         : GText('Video uploaded. Long press the word to view.'),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _pickVideo(ImageSource.gallery),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: GText('Gallery', style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _pickVideo(ImageSource.camera),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: GText('Camera', style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-              if (_currentVideo.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _deleteVideo,
+                        onPressed: () => _pickVideo(ImageSource.gallery),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: Colors.green,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: GText('Delete', style: TextStyle(color: Colors.white)),
+                        child: GText('Gallery', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _pickVideo(ImageSource.camera),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: GText('Camera', style: TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],
                 ),
+                if (_currentVideo.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _deleteVideo,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: GText('Delete', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
         actions: [

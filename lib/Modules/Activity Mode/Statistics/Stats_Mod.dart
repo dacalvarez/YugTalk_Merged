@@ -125,12 +125,12 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
               ],
             ),
           ),
-          Positioned(
+          const Positioned(
             top: 0,
             right: 0,
             child: IconButton(
-              icon: const Icon(Icons.bar_chart),
-              onPressed: () {
+              icon: Icon(Icons.bar_chart),
+              onPressed: null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -139,7 +139,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                     ),
                   ),
                 );
-              },
+              },*/
             ),
           ),
         ],
@@ -676,12 +676,12 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
               ],
             ),
           ),
-          Positioned(
+          const Positioned(
             top: 0,
             right: 0,
             child: IconButton(
-              icon: const Icon(Icons.bar_chart),
-              onPressed: () {
+              icon: Icon(Icons.bar_chart),
+              onPressed: null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -690,7 +690,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                     ),
                   ),
                 );
-              },
+              },*/
             ),
           ),
         ],
@@ -943,7 +943,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
 
   void _navigateToForm(BuildContext context, ActivityForms form) {
     if (form.formType == 'PLS-5') {
-      /*Navigator.push(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => CreatePLS5Form_Widget(initialData: form),
@@ -955,190 +955,231 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
         MaterialPageRoute(
           builder: (context) => CreateBriganceForm_Widget(initialData: form),
         ),
-      );*/
+      );
     }
   }
 }
 
-class GeneralStats extends StatelessWidget {
-  final List<WordUsage> wordUsages;
-  final List<ActivityForms> activityForms;
-
+class GeneralStats extends StatefulWidget {
   const GeneralStats({
     Key? key,
     required this.wordUsages,
     required this.activityForms,
   }) : super(key: key);
 
+  final List<WordUsage> wordUsages;
+  final List<ActivityForms> activityForms;
+
+  @override
+  _GeneralStatsState createState() => _GeneralStatsState();
+}
+
+class _GeneralStatsState extends State<GeneralStats> {
+  int _boardCount = 0;
+  int _wordCount = 0;
+  int _locationCount = 0;
+  int _activityCount = 0;
+
+  StreamSubscription<QuerySnapshot>? _boardSubscription;
+  Map<String, StreamSubscription<QuerySnapshot>> _wordSubscriptions = {};
+  StreamSubscription<DocumentSnapshot>? _userSettingsSubscription;
+  StreamSubscription<QuerySnapshot>? _pls5Subscription;
+  StreamSubscription<QuerySnapshot>? _briganceSubscription;
+  Map<String, Set<String>> _boardWords = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _boardSubscription?.cancel();
+    _wordSubscriptions.values.forEach((subscription) => subscription.cancel());
+    _userSettingsSubscription?.cancel();
+    _pls5Subscription?.cancel();
+    _briganceSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _fetchData() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+
+    // Fetch board and word counts
+    final boardQuery = FirebaseFirestore.instance.collection('board');
+    _boardSubscription = boardQuery.snapshots().listen((boardSnapshot) {
+      _updateBoardCount(boardSnapshot.docs, user.email!);
+    });
+
+    // Fetch location count
+    final userSettingsRef = FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(user.email);
+    _userSettingsSubscription = userSettingsRef.snapshots().listen((snapshot) {
+      if (snapshot.exists) {
+        _updateLocationCount(snapshot.data());
+      }
+    });
+
+    // Fetch activity count
+    _fetchActivityCount(user.email!);
+  }
+
+  void _updateBoardCount(List<QueryDocumentSnapshot> boardDocs, String userEmail) {
+    int boardCount = 0;
+
+    _wordSubscriptions.values.forEach((subscription) => subscription.cancel());
+    _wordSubscriptions.clear();
+    _boardWords.clear();
+
+    for (var boardDoc in boardDocs) {
+      boardDoc.reference.snapshots().listen((docSnapshot) {
+        if (docSnapshot.exists) {
+          final boardData = docSnapshot.data() as Map<String, dynamic>?;
+          if (boardData != null && boardData['ownerID'] == userEmail) {
+            boardCount++;
+
+            final wordsSubscription = docSnapshot.reference.collection('words').snapshots().listen((wordsSnapshot) {
+              _updateBoardWords(docSnapshot.id, wordsSnapshot.docs);
+            });
+
+            _wordSubscriptions[docSnapshot.id] = wordsSubscription;
+          }
+        }
+        _updateCounts(boardCount: boardCount);
+      });
+    }
+  }
+
+  void _updateBoardWords(String boardId, List<QueryDocumentSnapshot> wordDocs) {
+    Set<String> currentBoardWords = Set<String>();
+
+    for (var wordDoc in wordDocs) {
+      final wordData = wordDoc.data() as Map<String, dynamic>?;
+      if (wordData != null && wordData['wordName'] != null) {
+        currentBoardWords.add(wordData['wordName'].toString().toLowerCase());
+      }
+    }
+
+    _boardWords[boardId] = currentBoardWords;
+    _updateUniqueWordCount();
+  }
+
+  void _updateUniqueWordCount() {
+    Set<String> allUniqueWords = Set<String>();
+    for (var boardWords in _boardWords.values) {
+      allUniqueWords.addAll(boardWords);
+    }
+    _updateCounts(wordCount: allUniqueWords.length);
+  }
+
+  void _updateLocationCount(Map<String, dynamic>? data) {
+    if (data == null) return;
+
+    final userLocations = data['userLocations'] as Map<String, dynamic>?;
+    if (userLocations == null) return;
+
+    int totalLocations = 0;
+    userLocations.forEach((key, value) {
+      String decodedValue = utf8.decode(base64.decode(value));
+      List<dynamic> decodedJson = jsonDecode(decodedValue);
+      totalLocations += decodedJson.length;
+    });
+
+    _updateCounts(locationCount: totalLocations);
+  }
+
+  void _fetchActivityCount(String userEmail) {
+    FirebaseFirestore.instance
+        .collection('user')
+        .where('email', isEqualTo: userEmail)
+        .limit(1)
+        .get()
+        .then((userDoc) {
+      if (userDoc.docs.isNotEmpty) {
+        final userId = userDoc.docs.first.id;
+        final pls5FormRef = FirebaseFirestore.instance
+            .collection('user')
+            .doc(userId)
+            .collection('PLS5Form');
+        final briganceFormRef = FirebaseFirestore.instance
+            .collection('user')
+            .doc(userId)
+            .collection('BriganceForm');
+
+        _pls5Subscription = pls5FormRef.snapshots().listen((_) => _updateActivityCount(userId));
+        _briganceSubscription = briganceFormRef.snapshots().listen((_) => _updateActivityCount(userId));
+      }
+    });
+  }
+
+  void _updateActivityCount(String userId) async {
+    final pls5Count = await FirebaseFirestore.instance
+        .collection('user')
+        .doc(userId)
+        .collection('PLS5Form')
+        .count()
+        .get();
+
+    final briganceCount = await FirebaseFirestore.instance
+        .collection('user')
+        .doc(userId)
+        .collection('BriganceForm')
+        .count()
+        .get();
+
+    int totalActivityCount = (pls5Count.count ?? 0) + (briganceCount.count ?? 0);
+    _updateCounts(activityCount: totalActivityCount);
+  }
+
+  void _updateCounts({int? boardCount, int? wordCount, int? locationCount, int? activityCount}) {
+    _safeSetState(() {
+      if (boardCount != null) _boardCount = boardCount;
+      if (wordCount != null) _wordCount = wordCount;
+      if (locationCount != null) _locationCount = locationCount;
+      if (activityCount != null) _activityCount = activityCount;
+    });
+  }
+
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    int categoryCount = wordUsages.map((w) => w.category).toSet().length;
-
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color textColor = isDarkMode ? Colors.white : Colors.black;
 
-    return FutureBuilder<Map<String, int>>(
-      future: Future.wait([
-        getLocationCount(),
-        getTotalFormCount(),
-        getWordCount(),
-      ]).then((results) => {
-        'locations': results[0],
-        'activities': results[1],
-        'words': results[2],
-      }),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: GText('Error: ${snapshot.error}'));
-        } else {
-          int locationCount = snapshot.data?['locations'] ?? 0;
-          int activityCount = snapshot.data?['activities'] ?? 0;
-          int wordCount = snapshot.data?['words'] ?? 0;
-
-          return SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
-            child: Container(
-              margin: const EdgeInsets.only(top: 20.0),
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 2,
-                childAspectRatio: 3,
-                mainAxisSpacing: 8.0,
-                crossAxisSpacing: 8.0,
-                children: [
-                  _buildGeneralStatContainer(context, 'Words',
-                      wordCount.toString(), textColor),
-                  _buildGeneralStatContainer(context, 'Categories',
-                      categoryCount.toString(), textColor),
-                  _buildGeneralStatContainer(context, 'Locations',
-                      locationCount.toString(), textColor),
-                  _buildGeneralStatContainer(context, 'Activities',
-                      activityCount.toString(), textColor),
-                ],
-              ),
-            ),
-          );
-        }
-      },
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.9,
+      child: Container(
+        margin: const EdgeInsets.only(top: 20.0),
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 2,
+          childAspectRatio: 3,
+          mainAxisSpacing: 8.0,
+          crossAxisSpacing: 8.0,
+          children: [
+            _buildGeneralStatContainer(context, 'Words',
+                _wordCount.toString(), textColor),
+            _buildGeneralStatContainer(context, 'Boards',
+                _boardCount.toString(), textColor),
+            _buildGeneralStatContainer(context, 'Locations',
+                _locationCount.toString(), textColor),
+            _buildGeneralStatContainer(context, 'Activities',
+                _activityCount.toString(), textColor),
+          ],
+        ),
+      ),
     );
   }
-
-  Future<int> getWordCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.email == null) {
-      return 0;
-    }
-
-    try {
-      Set<String> uniqueWords = Set<String>();
-
-      // Fetch all boards owned by the current user
-      final boardsSnapshot = await FirebaseFirestore.instance
-          .collection('board')
-          .where('ownerID', isEqualTo: user.email)
-          .get();
-
-      for (var boardDoc in boardsSnapshot.docs) {
-        // Get the 'words' subcollection
-        final wordsCollection = boardDoc.reference.collection('words');
-        final wordsSnapshot = await wordsCollection.get();
-
-        // Add each word's ID to the set of unique words
-        for (var wordDoc in wordsSnapshot.docs) {
-          uniqueWords.add(wordDoc.id);
-        }
-      }
-
-      int totalUniqueWordCount = uniqueWords.length;
-      print('Total unique word count: $totalUniqueWordCount'); // For debugging
-      return totalUniqueWordCount;
-    } catch (e) {
-      print('Error fetching word count: $e');
-      return 0;
-    }
-  }
-
-  Future<int> getTotalFormCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.email == null) {
-      return 0;
-    }
-
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('user')
-          .where('email', isEqualTo: user.email)
-          .limit(1)
-          .get();
-
-      if (userDoc.docs.isEmpty) {
-        return 0;
-      }
-
-      final userId = userDoc.docs.first.id;
-
-      // Count PLS5Forms
-      final pls5Count = await FirebaseFirestore.instance
-          .collection('user')
-          .doc(userId)
-          .collection('PLS5Form')
-          .count()
-          .get();
-
-      // Count BriganceForms
-      final briganceCount = await FirebaseFirestore.instance
-          .collection('user')
-          .doc(userId)
-          .collection('BriganceForm')
-          .count()
-          .get();
-
-      // Use null-aware operators to handle potential null values
-      return (pls5Count.count ?? 0) + (briganceCount.count ?? 0);
-    } catch (e) {
-      print('Error fetching total form count: $e');
-      return 0;
-    }
-  }
-
-  Future<int> getLocationCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.email == null) {
-      return 0;
-    }
-
-    try {
-      final userSettingsDoc = await FirebaseFirestore.instance
-          .collection('userSettings')
-          .doc(user.email)
-          .get();
-
-      if (!userSettingsDoc.exists) {
-        return 0;
-      }
-
-      final userLocations =
-      userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
-      if (userLocations == null) {
-        return 0;
-      }
-
-      int totalLocations = 0;
-      userLocations.forEach((key, value) {
-        String decodedValue = utf8.decode(base64.decode(value));
-        List<dynamic> decodedJson = jsonDecode(decodedValue);
-        totalLocations += decodedJson.length;
-      });
-
-      return totalLocations;
-    } catch (e) {
-      return 0;
-    }
-  }
-
+  
   Widget _buildGeneralStatContainer(
       BuildContext context, String title, String count, Color textColor) {
     return Container(
@@ -1205,6 +1246,42 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
   void initState() {
     super.initState();
     _loadItems();
+  }
+
+  Future<List<Map<String, String>>> _fetchUserBoards() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return [];
+    }
+
+    try {
+      final boardsSnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .where('ownerID', isEqualTo: user.email)
+          .get();
+
+      List<Map<String, String>> boards = [];
+      for (var doc in boardsSnapshot.docs) {
+        String boardName = 'Unnamed Board';
+
+        // Fetch the 'name' field from the board document
+        final boardData = doc.data();
+        if (boardData.containsKey('name') && boardData['name'] != null) {
+          boardName = boardData['name'] as String;
+        }
+
+        boards.add({
+          'id': doc.id,
+          'address': boardName,
+          'type': 'Board',
+        });
+      }
+
+      return boards;
+    } catch (e) {
+      print('Error fetching user boards: $e');
+      return [];
+    }
   }
 
   Future<List<Map<String, String>>> _fetchUserForms() async {
@@ -1288,9 +1365,14 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         for (var wordDoc in wordsSnapshot.docs) {
           String wordId = wordDoc.id;
           String wordName = wordDoc.data()['wordName'] ?? 'Unknown';
+          String wordCategory = wordDoc.data()['wordCategory'] ?? 'Uncategorized';
 
           if (!wordInfo.containsKey(wordId)) {
-            wordInfo[wordId] = {'wordName': wordName, 'count': 0};
+            wordInfo[wordId] = {
+              'wordName': wordName,
+              'wordCategory': wordCategory,
+              'count': 0
+            };
           }
           wordInfo[wordId]!['count'] = (wordInfo[wordId]!['count'] as int) + 1;
         }
@@ -1300,6 +1382,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       List<Map<String, dynamic>> wordData = wordInfo.entries.map((entry) => {
         'word': entry.key,
         'wordName': entry.value['wordName'],
+        'wordCategory': entry.value['wordCategory'],
         'count': entry.value['count'],
       }).toList();
 
@@ -1316,12 +1399,19 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
   void _loadItems() async {
     if (widget.title == 'Words') {
       List<Map<String, dynamic>> wordData = await _fetchWordUsages();
-      print('Loaded word data: $wordData');
       setState(() {
         allItems = wordData.map((word) => {
           'address': word['wordName'] as String,
           'count': word['count'].toString(),
+          //'type': 'Word',
+          'category': word['wordCategory'] as String,
         }).toList().cast<Map<String, String>>();
+        filteredItems = allItems;
+      });
+    } else if (widget.title == 'Boards') {
+      List<Map<String, String>> userBoards = await _fetchUserBoards();
+      setState(() {
+        allItems = userBoards;
         filteredItems = allItems;
       });
     } else if (widget.title == 'Locations') {
@@ -1392,7 +1482,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       } else {
         filteredItems = allItems
             .where((item) =>
-        item['type'] == category &&
+            item['type'] == category &&
             item['address']!
                 .toLowerCase()
                 .contains(_popupSearchQuery.toLowerCase()))
@@ -1407,11 +1497,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       case 'Words':
         items = allItems;
         break;
-      case 'Categories':
-        items = generateDummyData()
-            .map((wordUsage) => {'address': wordUsage.category})
-            .toSet()
-            .toList();
+      case 'Boards':
+        items = allItems;
         break;
       case 'Locations':
         items = allItems;
@@ -1436,8 +1523,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
     switch (widget.title) {
       case 'Words':
-        filterOptions = ['All'] +
-            generateDummyData().map((w) => w.category).toSet().toList();
+        filterOptions = ['All'] + allItems.map((item) =>
+        item['category'] as String).toSet().toList();
         filterLabel = 'Category: ';
         break;
       case 'Locations':
@@ -1495,7 +1582,6 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    print('Building dialog. Filtered items: $filteredItems'); // Add this line
     return Dialog(
       child: ConstrainedBox(
         constraints: BoxConstraints(
