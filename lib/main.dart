@@ -148,6 +148,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
   void initState() {
     super.initState();
     _setupLocationMonitoring();
+    _loadData();
   }
 
   void _setupLocationMonitoring() {
@@ -158,6 +159,13 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
     });
 
     _locationMonitor.startMonitoring();
+  }
+
+  Future<void> _loadData() async {
+    await _locationMonitor.loadLocationCounters();
+    await _locationMonitor.loadLocationData();
+    await _locationMonitor.loadEncryptedData();
+    await _locationMonitor.startMonitoring();
   }
 
   @override
@@ -198,9 +206,10 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
             final bool isDarkMode = data['DarkMode'] ?? false;
             final bool isTagalog = data['languagePreference'] ?? true;
 
-            final Map<String, dynamic> userLocations =
-                data['userLocations'] ?? {};
-            _locationMonitor.updateLocations(userLocations);
+            final Map<String, dynamic> userLocations = data['userLocations'] ?? {};
+            if (userLocations.isNotEmpty) {
+              _locationMonitor.updateLocations(userLocations);
+            }
 
             if (isTagalog) {
               GText.init(to: 'tl', enableCaching: false);
@@ -295,7 +304,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
               ),
               themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
               home: widget.user.emailVerified ?
-              const ActivityMode_Mod() : const Verification_Widget(),
+              const Home_Mod() : const Verification_Widget(),
             );
           },
         );

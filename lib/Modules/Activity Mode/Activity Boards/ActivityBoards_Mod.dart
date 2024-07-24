@@ -39,6 +39,7 @@ class _ActivityBoards_ModState extends State<ActivityBoards_Mod> {
             Align(
               alignment: Alignment.bottomRight,
               child: AddBoardWidget(
+                isActivityBoard: true,
                 userID: widget.userID,
                 onBoardAdded: () {
                   _boardsListKey.currentState?.refreshBoards();

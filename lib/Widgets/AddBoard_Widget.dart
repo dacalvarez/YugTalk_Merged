@@ -6,12 +6,14 @@ import 'package:gtext/gtext.dart';
 class AddBoardWidget extends StatefulWidget {
   final String userID;
   final VoidCallback onBoardAdded;
+  bool isActivityBoard;
 
-  const AddBoardWidget({
-    Key? key,
+  AddBoardWidget({
+    super.key,
+    this.isActivityBoard = false,
     required this.userID,
     required this.onBoardAdded,
-  }) : super(key: key);
+  });
 
   @override
   _AddBoardWidgetState createState() => _AddBoardWidgetState();
@@ -90,7 +92,7 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
         'language': language,
         'connectedForm': name,
         'dateCreated': Timestamp.fromDate(dateOnly),
-        'isActivityBoard': true,
+        'isActivityBoard': widget.isActivityBoard,
       });
 
       await boardRef
@@ -99,6 +101,9 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
           .set({'initialized': true});
 
       widget.onBoardAdded();
+      ScaffoldMessenger.of(parentContext).showSnackBar(
+        SnackBar(content: GText('Board Added Successfully')),
+      );
     } catch (e) {
       print('Error adding board: $e');
       ScaffoldMessenger.of(parentContext).showSnackBar(

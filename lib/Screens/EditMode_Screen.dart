@@ -49,6 +49,7 @@ class _EditModeState extends State<EditMode> {
             Align(
               alignment: Alignment.bottomRight,
               child: AddBoardWidget(
+                isActivityBoard: false,
                 userID: widget.userID,
                 onBoardAdded: () {
                   _boardsListKey.currentState?.refreshBoards();
