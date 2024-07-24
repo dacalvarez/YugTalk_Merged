@@ -802,7 +802,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                               date = null;
                             }
                             return ListTile(
-                              title: GText(
+                              title: Text(
                                 form['activityFormName'],
                               ),
                               subtitle: GText(

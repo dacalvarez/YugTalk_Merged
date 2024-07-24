@@ -44,6 +44,9 @@ class _DrawerWidgetState extends State<DrawerWidget> {
     if (_showLocation) {
       _startLocationStream();
     }
+    if (await Permission.locationAlways.isDenied) {
+      await Permission.locationAlways.request();
+    }
   }
 
   void _startLocationStream() {
@@ -54,10 +57,18 @@ class _DrawerWidgetState extends State<DrawerWidget> {
       ),
     ).listen((Position position) {
       _updateLocation(position);
-    });
+    },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: GText('Error in location stream: $error')),
+        );
+      },
+    );
   }
 
   Future<void> _updateLocation(Position position) async {
+    if (!mounted) return;
+
     DateTime timestamp = DateTime.now();
 
     String encryptedLocation = _encryptLocation({
@@ -78,7 +89,9 @@ class _DrawerWidgetState extends State<DrawerWidget> {
     String currentLocationType = await _checkCurrentLocation(currentPosition);
 
     // Update the UI if needed
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<String> _checkCurrentLocation(LatLng currentPosition) async {

@@ -2,7 +2,6 @@ name: iOS-ipa-build
 on:
   workflow_dispatch:
 
-# Add this permissions block
 permissions:
   contents: write
 
@@ -33,6 +32,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v0.45
+          tag: v0.5
           overwrite: true
           body: "Test for sideloading"

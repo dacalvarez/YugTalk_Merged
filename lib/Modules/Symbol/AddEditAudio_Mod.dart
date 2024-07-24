@@ -82,7 +82,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       late String filePath;
       if (Platform.isIOS) {
         Directory appDocDir = await getApplicationDocumentsDirectory();
-        filePath = '${appDocDir.path}/recorded_audio.${getSupportedFileExtension()}';
+        filePath = '${appDocDir.path}/recorded_audio.aac';
       } else {
         Directory cacheDir = await getTemporaryDirectory();
         filePath = '${cacheDir.path}/recorded_audio.${getSupportedFileExtension()}';
@@ -91,7 +91,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       _recordedFilePath = filePath;
       await _recorder!.startRecorder(
         toFile: _recordedFilePath,
-        //codec: Codec.aacADTS,
+        codec: Codec.aacADTS,
       );
       setState(() {
         _isRecording = true;
@@ -289,36 +289,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
         backgroundColor: Colors.red,
       ),
     );
-  }
-
-  Future<String> _uploadAudioToFirebase(String filePath) async {
-    try {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw Exception('File does not exist');
-      }
-      final fileName = filePath.split('/').last;
-      final destination = 'media/audio/$fileName';
-      final ref = FirebaseStorage.instance.ref(destination);
-      final uploadTask = ref.putFile(file);
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      // Update Firestore with the new audio URL
-      await FirebaseFirestore.instance
-          .collection('board')
-          .doc(widget.boardId)
-          .collection('words')
-          .doc(widget.symbolId)
-          .update({'wordAudio': downloadUrl});
-
-      widget.onAudioChanged(downloadUrl);  // Use the callback here
-
-      return downloadUrl;
-    } catch (e) {
-      _showError('Failed to upload audio: $e');
-      return '';
-    }
   }
 
   void _confirmCancel() {
