@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yugtalk/Modules/Authentication/Authentication_Mod.dart';
@@ -21,6 +22,7 @@ class DrawerWidget extends StatefulWidget {
 
 class _DrawerWidgetState extends State<DrawerWidget> {
   bool _showLocation = false;
+  StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
   void initState() {
@@ -28,11 +30,83 @@ class _DrawerWidgetState extends State<DrawerWidget> {
     _checkLocationPermission();
   }
 
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkLocationPermission() async {
     var status = await Permission.location.status;
     setState(() {
       _showLocation = status.isGranted;
     });
+    if (_showLocation) {
+      _startLocationStream();
+    }
+  }
+
+  void _startLocationStream() {
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      _updateLocation(position);
+    });
+  }
+
+  Future<void> _updateLocation(Position position) async {
+    DateTime timestamp = DateTime.now();
+
+    String encryptedLocation = _encryptLocation({
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'timestamp': timestamp.toUtc().millisecondsSinceEpoch,
+    });
+
+    await FirebaseFirestore.instance
+        .collection('currentLocation')
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .update({
+      'currentLocation': encryptedLocation,
+    });
+
+    // Check if user is inside any saved location
+    LatLng currentPosition = LatLng(position.latitude, position.longitude);
+    String currentLocationType = await _checkCurrentLocation(currentPosition);
+
+    // Update the UI if needed
+    setState(() {});
+  }
+
+  Future<String> _checkCurrentLocation(LatLng currentPosition) async {
+    DocumentSnapshot settingsDoc = await FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .get();
+
+    Map<String, dynamic>? data = settingsDoc.data() as Map<String, dynamic>?;
+    Map<String, dynamic>? userLocations = data?['userLocations'];
+
+    if (userLocations != null) {
+      for (String locationType in ['Home', 'School', 'Clinic']) {
+        String? encodedLocation = userLocations[locationType];
+        if (encodedLocation != null) {
+          List<Map<String, dynamic>> locations = _decodeLocations(encodedLocation);
+          for (var location in locations) {
+            LatLng savedLocation = LatLng(location['latitude'], location['longitude']);
+            double distance = calculateDistance(currentPosition, savedLocation);
+            if (distance <= 250) {
+              return locationType;
+            }
+          }
+        }
+      }
+    }
+
+    return 'Outside';
   }
 
   Stream<String?> _getLocationStream() {
@@ -57,7 +131,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
         await FirebaseFirestore.instance
             .collection('currentLocation')
             .doc(FirebaseAuth.instance.currentUser!.email)
-            .set({
+            .update({
           'currentLocation': encryptedLocation,
         });
 
@@ -89,6 +163,8 @@ class _DrawerWidgetState extends State<DrawerWidget> {
 
         return 'Outside';
       } catch (e) {
+        print('Error in location stream: $e');
+
         return null;
       }
     });
@@ -169,7 +245,6 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                                         'Current Location: ',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 16,
                                         ),
                                       ),
                                       const SizedBox(width: 4),
@@ -187,7 +262,6 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                                           snapshot.data ?? 'Unknown',
                                           style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 16,
                                           ),
                                         ),
                                     ],

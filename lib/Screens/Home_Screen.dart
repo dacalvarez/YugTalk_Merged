@@ -24,9 +24,9 @@ class _Home_ModState extends State<Home_Mod>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController editModePasswordController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController activityModePasswordController =
-      TextEditingController();
+  TextEditingController();
   bool _passwordVisible = false;
   List<WordUsage> wordUsages = generateDummyData();
   String _selectedCategory = 'All Categories';
@@ -177,10 +177,10 @@ class _Home_ModState extends State<Home_Mod>
           .get();
 
       QuerySnapshot<Map<String, dynamic>> guardianSnapshot =
-          await FirebaseFirestore.instance
-              .collection('guardian')
-              .where('password', isEqualTo: hashedPassword)
-              .get();
+      await FirebaseFirestore.instance
+          .collection('guardian')
+          .where('password', isEqualTo: hashedPassword)
+          .get();
 
       String userType;
       if (slpSnapshot.docs.isNotEmpty) {
@@ -527,7 +527,7 @@ class _Home_ModState extends State<Home_Mod>
           bool matchesLocation = _selectedLocation == 'All Locations' ||
               w.datesOfUsage.any((usage) => usage.values.any((lfList) =>
                   lfList.any((lf) =>
-                      lf.location.toString().split('.').last.toLowerCase() ==
+                  lf.location.toString().split('.').last.toLowerCase() ==
                       _selectedLocation.toLowerCase())));
           bool matchesCategory = title != 'Categories' ||
               _selectedCategory == 'All Categories' ||
@@ -542,8 +542,8 @@ class _Home_ModState extends State<Home_Mod>
       case 'Categories':
         return wordUsages
             .where((w) =>
-                _selectedCategory == 'All Categories' ||
-                w.category == _selectedCategory)
+        _selectedCategory == 'All Categories' ||
+            w.category == _selectedCategory)
             .toList();
       default:
         return [];
@@ -728,7 +728,7 @@ class _Home_ModState extends State<Home_Mod>
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
           icon:
-              Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
+          Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
           onPressed: () {
             setState(() {
               _passwordVisible = !_passwordVisible;

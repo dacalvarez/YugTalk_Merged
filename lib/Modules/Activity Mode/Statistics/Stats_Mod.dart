@@ -129,8 +129,8 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
             top: 0,
             right: 0,
             child: IconButton(
-              icon: Icon(Icons.bar_chart),
-              onPressed: null /*() {
+                icon: Icon(Icons.bar_chart),
+                onPressed: null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -680,8 +680,8 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
             top: 0,
             right: 0,
             child: IconButton(
-              icon: Icon(Icons.bar_chart),
-              onPressed: null /*() {
+                icon: Icon(Icons.bar_chart),
+                onPressed: null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1179,7 +1179,7 @@ class _GeneralStatsState extends State<GeneralStats> {
       ),
     );
   }
-  
+
   Widget _buildGeneralStatContainer(
       BuildContext context, String title, String count, Color textColor) {
     return Container(
@@ -1239,8 +1239,9 @@ class GeneralStatsDialog extends StatefulWidget {
 class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
   String _popupSearchQuery = '';
   String _selectedFilter = 'All';
-  List<Map<String, String>> filteredItems = [];
-  List<Map<String, String>> allItems = [];
+  List<Map<String, dynamic>> filteredItems = [];
+  List<Map<String, dynamic>> allItems = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -1248,6 +1249,118 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     _loadItems();
   }
 
+
+  String _decryptData(String encryptedData) {
+    List<int> bytes = base64Url.decode(encryptedData);
+    return utf8.decode(bytes);
+  }
+
+  @override
+  void didUpdateWidget(covariant GeneralStatsDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.title != widget.title) {
+      _loadItems();
+    }
+  }
+
+  // Add a caching mechanism
+  Future<void> _loadItems() async {
+    setState(() {
+      isLoading = true; // Set loading to true when starting to load items
+    });
+
+    if (widget.title == 'Words') {
+      List<Map<String, dynamic>> wordData = await _fetchWordUsages();
+      setState(() {
+        allItems = wordData.map((word) => {
+          'address': word['wordName'] as String,
+          'count': word['count'].toString(),
+          'category': word['wordCategory'] as String,
+        }).toList().cast<Map<String, String>>();
+        filteredItems = allItems;
+      });
+    } else if (widget.title == 'Boards') {
+      List<Map<String, String>> userBoards = await _fetchUserBoards();
+      setState(() {
+        allItems = userBoards;
+        filteredItems = allItems;
+      });
+    } else if (widget.title == 'Locations') {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && user.email != null) {
+          // Fetch userSettings to get userLocations
+          final userSettingsDoc = await FirebaseFirestore.instance
+              .collection('userSettings')
+              .doc(user.email)
+              .get();
+
+          final userLocations = userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+
+          if (userLocations != null) {
+            // Fetch currentLocation data
+            final currentLocationDoc = await FirebaseFirestore.instance
+                .collection('currentLocation')
+                .doc(user.email)
+                .get();
+
+            final currentLocationData = currentLocationDoc.data();
+
+            List<Map<String, dynamic>> locationData = [];
+
+            userLocations.forEach((locationType, encodedLocations) {
+              String decodedValue = utf8.decode(base64.decode(encodedLocations));
+              List<dynamic> decodedJson = jsonDecode(decodedValue);
+
+              for (var location in decodedJson) {
+                String address = location['address'];
+
+                // Decrypt and parse the corresponding currentLocation data
+                String? encryptedData = currentLocationData?[locationType];
+                Map<String, dynamic> locationStats = {};
+
+                if (encryptedData != null) {
+                  String decryptedJson = _decryptData(encryptedData);
+                  locationStats = json.decode(decryptedJson);
+                }
+
+                Map<String, dynamic> item = {
+                  'type': locationType,
+                  'address': address,
+                  'counter': locationStats['counter'] ?? 0,
+                  'startTime': _formatDateTime(locationStats['startTime'] ?? 'N/A'),
+                  'endTime': _formatDateTime(locationStats['endTime'] ?? 'N/A'),
+                  'duration': locationStats['duration'] ?? 'N/A',
+                };
+                locationData.add(item);
+              }
+            });
+
+            setState(() {
+              allItems = locationData;
+              filteredItems = locationData;
+            });
+          }
+        }
+      } catch (e) {
+        print('Error fetching location data: $e');
+      }
+    } else if (widget.title == 'Activities') {
+      List<Map<String, String>> userForms = await _fetchUserForms();
+      setState(() {
+        allItems = userForms;
+        filteredItems = allItems;
+      });
+    } else {
+      setState(() {
+        filteredItems = _filterItems();
+      });
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
   Future<List<Map<String, String>>> _fetchUserBoards() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) {
@@ -1396,81 +1509,6 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     }
   }
 
-  void _loadItems() async {
-    if (widget.title == 'Words') {
-      List<Map<String, dynamic>> wordData = await _fetchWordUsages();
-      setState(() {
-        allItems = wordData.map((word) => {
-          'address': word['wordName'] as String,
-          'count': word['count'].toString(),
-          //'type': 'Word',
-          'category': word['wordCategory'] as String,
-        }).toList().cast<Map<String, String>>();
-        filteredItems = allItems;
-      });
-    } else if (widget.title == 'Boards') {
-      List<Map<String, String>> userBoards = await _fetchUserBoards();
-      setState(() {
-        allItems = userBoards;
-        filteredItems = allItems;
-      });
-    } else if (widget.title == 'Locations') {
-      List<Map<String, String>> userLocations = await _fetchUserLocations();
-      setState(() {
-        allItems = userLocations;
-        filteredItems = allItems;
-      });
-    } else if (widget.title == 'Activities') {
-      List<Map<String, String>> userForms = await _fetchUserForms();
-      setState(() {
-        allItems = userForms;
-        filteredItems = allItems;
-      });
-    } else {
-      setState(() {
-        filteredItems = _filterItems();
-      });
-    }
-  }
-
-  Future<List<Map<String, String>>> _fetchUserLocations() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.email == null) {
-      return [];
-    }
-
-    try {
-      final userSettingsDoc = await FirebaseFirestore.instance
-          .collection('userSettings')
-          .doc(user.email)
-          .get();
-
-      if (!userSettingsDoc.exists) {
-        return [];
-      }
-
-      final userLocations =
-      userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
-      if (userLocations == null) {
-        return [];
-      }
-
-      List<Map<String, String>> locationAddresses = [];
-      userLocations.forEach((key, value) {
-        String decodedValue = utf8.decode(base64.decode(value));
-        List<dynamic> decodedJson = jsonDecode(decodedValue);
-        for (var location in decodedJson) {
-          String address = location['address'];
-          locationAddresses.add({'type': key, 'address': address});
-        }
-      });
-
-      return locationAddresses;
-    } catch (e) {
-      return [];
-    }
-  }
-
   void _filterItemsByCategory(String category) {
     setState(() {
       if (category == 'All') {
@@ -1482,7 +1520,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       } else {
         filteredItems = allItems
             .where((item) =>
-            item['type'] == category &&
+        item['type'] == category &&
             item['address']!
                 .toLowerCase()
                 .contains(_popupSearchQuery.toLowerCase()))
@@ -1491,18 +1529,12 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     });
   }
 
-  List<Map<String, String>> _filterItems() {
-    List<Map<String, String>> items;
+  List<Map<String, dynamic>> _filterItems() {
+    List<Map<String, dynamic>> items;
     switch (widget.title) {
       case 'Words':
-        items = allItems;
-        break;
       case 'Boards':
-        items = allItems;
-        break;
       case 'Locations':
-        items = allItems;
-        break;
       case 'Activities':
         items = allItems;
         break;
@@ -1511,10 +1543,32 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     }
 
     return items
-        .where((item) => item['address']!
+        .where((item) => item['address'].toString()
         .toLowerCase()
         .contains(_popupSearchQuery.toLowerCase()))
         .toList();
+  }
+
+  String _formatDateTime(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+
+    DateTime? dateTime;
+    try {
+      if (timestamp is Timestamp) {
+        dateTime = timestamp.toDate();
+      } else if (timestamp is String) {
+        dateTime = DateTime.tryParse(timestamp);
+      } else if (timestamp is int) {
+        // Handle Unix timestamp in milliseconds
+        dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      }
+    } catch (e) {
+      print('Error parsing date: $e');
+    }
+
+    if (dateTime == null) return 'Invalid Date';
+
+    return "${dateTime.month.toString().padLeft(2, '0')}/${dateTime.day.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}";
   }
 
   Widget _buildFilterDropdown() {
@@ -1582,6 +1636,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    print('Filtered items: $filteredItems');
     return Dialog(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -1623,16 +1678,27 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
               child: _buildFilterDropdown(),
             ),
             Expanded(
-              child: widget.title == 'Locations' && filteredItems.isEmpty
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator()) // Display loading indicator
+                  : widget.title == 'Locations' && filteredItems.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : ListView.separated(
                 padding: const EdgeInsets.all(16.0),
                 itemCount: filteredItems.length,
                 separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
+                  final item = filteredItems[index];
                   return ListTile(
-                    title: Text(filteredItems[index]['address']!),
-                    //subtitle: Text(filteredItems[index]['type'] ?? ''),
+                    title: Text(item['address'] ?? item['type'] ?? 'Unknown'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (item['counter'] != null) Text('Times visited: ${item['counter'] ?? '0'}'),
+                        if (item['startTime'] != null) Text('Last visit start: ${item['startTime'] ?? 'N/A'}'),
+                        if (item['endTime'] != null) Text('Last visit end: ${item['endTime'] ?? 'N/A'}'),
+                        if (item['duration'] != null) Text('Last visit duration: ${item['duration'] ?? 'N/A'} seconds'),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -1642,72 +1708,4 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       ),
     );
   }
-
-/*@override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search...',
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _popupSearchQuery = value;
-                  filteredItems = _filterItems();
-                  if (widget.title == 'Words' || widget.title == 'Activities') {
-                    filteredItems = filteredItems
-                        .where((item) =>
-                            _selectedFilter == 'All' ||
-                            item['category'] == _selectedFilter ||
-                            item['type'] == _selectedFilter)
-                        .toList();
-                  } else if (widget.title == 'Locations') {
-                    _filterItemsByCategory(_selectedFilter);
-                  }
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-      content: Column(
-        children: [
-          _buildFilterDropdown(),
-          Expanded(
-            child: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: widget.title == 'Locations' && filteredItems.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: filteredItems.length,
-                        separatorBuilder: (context, index) => const Divider(),
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: GText(filteredItems[index]['address']!),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(); // Close the dialog
-          },
-          child: const GText('Exit'),
-        ),
-      ],
-    );
-  }*/
 }
