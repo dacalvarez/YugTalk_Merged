@@ -8,10 +8,14 @@ import 'package:intl/intl.dart';
 
 class BoardsListWidget extends StatefulWidget {
   final String userID;
+  final bool showActivityBoards;
+  final bool showOnlyActivityBoards;
 
   const BoardsListWidget({
     Key? key,
     required this.userID,
+    this.showActivityBoards = false,
+    this.showOnlyActivityBoards = false,
   }) : super(key: key);
 
   @override
@@ -60,42 +64,53 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
 
   Future<void> _fetchBoards() async {
     try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('board')
-          .get();
+      QuerySnapshot querySnapshot =
+      await FirebaseFirestore.instance.collection('board').get();
 
-      List<Map<String, dynamic>> boards = querySnapshot.docs
-          .where((doc) {
-            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            bool isDefault = data['isDefault'] ?? false;
-            List<dynamic> hiddenBy = data['hiddenBy'] ?? [];
-            String ownerID = data['ownerID'] ?? '';
+      List<Map<String, dynamic>> boards = querySnapshot.docs.where((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        bool isDefault = data['isDefault'] ?? false;
+        List<dynamic> hiddenBy = data['hiddenBy'] ?? [];
+        String ownerID = data['ownerID'] ?? '';
+        bool isActivityBoard = data['isActivityBoard'] ?? false;
 
-            if (hiddenBy.contains(widget.userID)) {
-              return false;
-            }
+        if (hiddenBy.contains(widget.userID)) {
+          return false;
+        }
 
-            if (isDefault || ownerID == widget.userID) {
-              return true;
-            }
+        if (widget.showOnlyActivityBoards) {
+          return isActivityBoard && ownerID == widget.userID;
+        }
 
-            return false;
-          })
-          .map((doc) {
-            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            return {
-              'id': doc.id,
-              'name': data['name'],
-              'isDefault': data['isDefault'] ?? false,
-              'isMain': data['isMain'] ?? false,
-              'category': data['category']?.isEmpty ?? true ? 'None' : data['category'],
-              'language': (data['language'] ?? 'Filipino').toString().replaceFirst(data['language'][0], data['language'][0].toUpperCase()),
-              'rows': data['rows'] ?? 4,
-              'columns': data['columns'] ?? 4,
-              'dateCreated': data['dateCreated'] != null ? DateFormat('MMMM d, yyyy').format((data['dateCreated'] as Timestamp).toDate()) : '',
-            };
-          })
-          .toList();
+        if (!widget.showActivityBoards && isActivityBoard) {
+          return false;
+        }
+
+        if (isDefault || ownerID == widget.userID) {
+          return true;
+        }
+
+        return false;
+      }).map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'name': data['name'],
+          'isDefault': data['isDefault'] ?? false,
+          'isMain': data['isMain'] ?? false,
+          'category':
+          data['category']?.isEmpty ?? true ? 'None' : data['category'],
+          'language': (data['language'] ?? 'Filipino').toString().replaceFirst(
+              data['language'][0], data['language'][0].toUpperCase()),
+          'rows': data['rows'] ?? 4,
+          'columns': data['columns'] ?? 4,
+          'dateCreated': data['dateCreated'] != null
+              ? DateFormat('MMMM d, yyyy')
+              .format((data['dateCreated'] as Timestamp).toDate())
+              : '',
+          'isActivityBoard': data['isActivityBoard'] ?? false,
+        };
+      }).toList();
 
       boards.sort((a, b) {
         if (a['isMain'] == true) {
@@ -112,19 +127,28 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         _filterBoards();
       });
     } catch (e) {
-      print('Error fetching boards: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching boards: $e')),
+      );
     }
   }
 
   void _filterBoards() {
     setState(() {
       _filteredBoards = _boards.where((board) {
-        bool matchesSearch = board['name'].toLowerCase().contains(_searchQuery.toLowerCase());
-        bool matchesLanguage = _selectedLanguage == null || board['language'] == _selectedLanguage;
-        bool matchesDimensions = _selectedDimensions == null || '${board['rows']}x${board['columns']}' == _selectedDimensions;
-        bool matchesCategory = _selectedCategory == null || board['category'] == _selectedCategory;
-
-        return matchesSearch && matchesLanguage && matchesDimensions && matchesCategory;
+        bool matchesSearch =
+        board['name'].toLowerCase().contains(_searchQuery.toLowerCase());
+        bool matchesLanguage =
+            _selectedLanguage == null || board['language'] == _selectedLanguage;
+        bool matchesDimensions = _selectedDimensions == null ||
+            '${board['rows']}x${board['columns']}' == _selectedDimensions;
+        bool matchesCategory =
+            _selectedCategory == null || board['category'] == _selectedCategory;
+        bool isActivityBoard = board['isActivityBoard'] ?? false;
+        return matchesSearch &&
+            matchesLanguage &&
+            matchesDimensions &&
+            matchesCategory;
       }).toList();
     });
   }
@@ -133,7 +157,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
     final board = _filteredBoards[index];
 
     if (board['isDefault']) {
-      await _duplicateAndHideDefaultBoard(index, board['name'], setAsMain: true);
+      await _duplicateAndHideDefaultBoard(index, board['name'],
+          setAsMain: true);
     } else {
       final newMainBoardID = board['id'];
 
@@ -147,7 +172,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         batch.update(doc.reference, {'isMain': false});
       }
 
-      batch.update(FirebaseFirestore.instance.collection('board').doc(newMainBoardID), {'isMain': true});
+      batch.update(
+          FirebaseFirestore.instance.collection('board').doc(newMainBoardID),
+          {'isMain': true});
 
       await batch.commit();
       setState(() {
@@ -165,7 +192,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
     const List<String> _languages = ['Filipino', 'English'];
     final board = _filteredBoards[index];
     final boardID = board['id'];
-    final boardDoc = await FirebaseFirestore.instance.collection('board').doc(boardID).get();
+    final boardDoc =
+    await FirebaseFirestore.instance.collection('board').doc(boardID).get();
     final boardData = boardDoc.data();
 
     if (board['isDefault']) {
@@ -191,7 +219,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                   children: <Widget>[
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Board Name'),
+                      decoration:
+                      const InputDecoration(labelText: 'Board Name'),
                     ),
                     TextField(
                       controller: _categoryController,
@@ -212,7 +241,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                     const SizedBox(height: 16),
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: GText('Language', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: GText('Language',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     Column(
                       children: _languages.map((language) {
@@ -260,7 +290,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
     }
   }
 
-  void _editBoard(int index, String newName, String newCategory, int newRows, int newColumns, String? newLanguage) async {
+  void _editBoard(int index, String newName, String newCategory, int newRows,
+      int newColumns, String? newLanguage) async {
     final boardID = _filteredBoards[index]['id'];
     try {
       await FirebaseFirestore.instance.collection('board').doc(boardID).update({
@@ -290,13 +321,19 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
       await _duplicateAndHideDefaultBoard(index, board['name']);
     } else {
       final boardID = board['id'];
-      final boardDoc = await FirebaseFirestore.instance.collection('board').doc(boardID).get();
+      final boardDoc = await FirebaseFirestore.instance
+          .collection('board')
+          .doc(boardID)
+          .get();
       final boardData = boardDoc.data();
 
       if (boardData != null) {
         int newID = await _getNextDocumentID();
         try {
-          await FirebaseFirestore.instance.collection('board').doc(newID.toString()).set({
+          await FirebaseFirestore.instance
+              .collection('board')
+              .doc(newID.toString())
+              .set({
             'name': '${boardData['name']} (Copy)',
             'ownerID': widget.userID,
             'category': boardData['category'],
@@ -308,7 +345,10 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           });
 
           final wordsCollection = boardDoc.reference.collection('words');
-          final newWordsCollection = FirebaseFirestore.instance.collection('board').doc(newID.toString()).collection('words');
+          final newWordsCollection = FirebaseFirestore.instance
+              .collection('board')
+              .doc(newID.toString())
+              .collection('words');
           final wordsSnapshot = await wordsCollection.get();
           for (var wordDoc in wordsSnapshot.docs) {
             await newWordsCollection.doc(wordDoc.id).set(wordDoc.data());
@@ -389,7 +429,10 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
 
   Future<void> _deleteNonDefaultBoard(String boardID) async {
     try {
-      await FirebaseFirestore.instance.collection('board').doc(boardID).delete();
+      await FirebaseFirestore.instance
+          .collection('board')
+          .doc(boardID)
+          .delete();
       setState(() {
         _fetchBoards();
       });
@@ -413,7 +456,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: GText('Cannot Delete Main Board'),
-          content: GText('To delete this board, please set a different board as the main board.'),
+          content: GText(
+              'To delete this board, please set a different board as the main board.'),
           actions: <Widget>[
             TextButton(
               child: GText('Exit'),
@@ -428,13 +472,17 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
   Future<void> _duplicateAndHideDefaultBoard(int index, String boardName,
       {bool setAsMain = false, bool edit = false, bool delete = false}) async {
     final boardID = _filteredBoards[index]['id'];
-    final boardDoc = await FirebaseFirestore.instance.collection('board').doc(boardID).get();
+    final boardDoc =
+    await FirebaseFirestore.instance.collection('board').doc(boardID).get();
     final boardData = boardDoc.data();
 
     if (boardData != null) {
       int newID = await _getNextDocumentID();
       try {
-        await FirebaseFirestore.instance.collection('board').doc(newID.toString()).set({
+        await FirebaseFirestore.instance
+            .collection('board')
+            .doc(newID.toString())
+            .set({
           'name': '$boardName (Copy)',
           'ownerID': widget.userID,
           'category': boardData['category'],
@@ -446,13 +494,19 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
         });
 
         final wordsCollection = boardDoc.reference.collection('words');
-        final newWordsCollection = FirebaseFirestore.instance.collection('board').doc(newID.toString()).collection('words');
+        final newWordsCollection = FirebaseFirestore.instance
+            .collection('board')
+            .doc(newID.toString())
+            .collection('words');
         final wordsSnapshot = await wordsCollection.get();
         for (var wordDoc in wordsSnapshot.docs) {
           await newWordsCollection.doc(wordDoc.id).set(wordDoc.data());
         }
 
-        await FirebaseFirestore.instance.collection('board').doc(boardID).update({
+        await FirebaseFirestore.instance
+            .collection('board')
+            .doc(boardID)
+            .update({
           'hiddenBy': FieldValue.arrayUnion([widget.userID])
         });
 
@@ -465,7 +519,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           _fetchBoards();
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: GText('Board duplicated and hidden successfully')),
+          const SnackBar(
+              content: GText('Board duplicated and hidden successfully')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -476,7 +531,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
   }
 
   Future<int> _getNextDocumentID() async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('board').get();
+    QuerySnapshot querySnapshot =
+    await FirebaseFirestore.instance.collection('board').get();
     List<int> ids = querySnapshot.docs.map((doc) => int.parse(doc.id)).toList();
     return ids.isEmpty ? 1 : ids.reduce((a, b) => a > b ? a : b) + 1;
   }
@@ -487,7 +543,8 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: GText('Set as Main Board'),
-          content: GText('Are you sure you want to set this board as the main board?'),
+          content: GText(
+              'Are you sure you want to set this board as the main board?'),
           actions: <Widget>[
             TextButton(
               child: GText('Cancel'),
@@ -536,7 +593,7 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   GText('Language'),
+                  GText('Language'),
                   DropdownButton<String>(
                     hint: GText('Language'),
                     value: _selectedLanguage,
@@ -548,8 +605,10 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                     },
                     items: const [
                       DropdownMenuItem(value: null, child: GText('All')),
-                      DropdownMenuItem(value: 'Filipino', child: GText('Filipino')),
-                      DropdownMenuItem(value: 'English', child: GText('English')),
+                      DropdownMenuItem(
+                          value: 'Filipino', child: GText('Filipino')),
+                      DropdownMenuItem(
+                          value: 'English', child: GText('English')),
                     ],
                   ),
                 ],
@@ -570,10 +629,9 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                     },
                     items: [
                       const DropdownMenuItem(value: null, child: GText('All')),
-                      ..._boards
-                          .map((board) => board['category'])
-                          .toSet()
-                          .map((category) => DropdownMenuItem(value: category, child: GText(category))),
+                      ..._boards.map((board) => board['category']).toSet().map(
+                              (category) => DropdownMenuItem(
+                              value: category, child: GText(category))),
                     ],
                   ),
                 ],
@@ -595,9 +653,11 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                     items: [
                       const DropdownMenuItem(value: null, child: GText('All')),
                       ..._boards
-                          .map((board) => '${board['rows']}x${board['columns']}')
+                          .map(
+                              (board) => '${board['rows']}x${board['columns']}')
                           .toSet()
-                          .map((dimensions) => DropdownMenuItem(value: dimensions, child: GText(dimensions))),
+                          .map((dimensions) => DropdownMenuItem(
+                          value: dimensions, child: GText(dimensions))),
                     ],
                   ),
                 ],
@@ -617,15 +677,17 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                 final dimensionsTag = '${board['rows']}x${board['columns']}';
 
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Theme.of(context).brightness == Brightness.light
                         ? Colors.white
                         : Colors.black12,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).brightness == Brightness.light
-                        ? Colors.grey.shade300
-                        : Colors.grey.shade900),
+                    border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade900),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -678,19 +740,39 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                         ],
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         leading: const Icon(Icons.dashboard),
                         title: Row(
                           children: [
-                            GText(board['name']),
+                            Text(board['name']),
+                            /*const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: board['isActivityBoard']
+                                    ? Colors.orange.shade200
+                                    : Colors.blue.shade200,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: GText(
+                                board['isActivityBoard']
+                                    ? 'Activity Board'
+                                    : 'Communication Board',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),*/
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.purple.shade200,
                                 borderRadius: BorderRadius.circular(5),
                               ),
-                              child: GText(dimensionsTag, style: const TextStyle(color: Colors.white)),
+                              child: GText(dimensionsTag,
+                                  style: const TextStyle(color: Colors.white)),
                             ),
                           ],
                         ),
@@ -699,16 +781,22 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                           children: [
                             GText(
                               languageTag,
-                              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey),
                             ),
                             GText(
                               'Category: ${board['category']}',
-                              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey),
                             ),
                             if (!board['isDefault'])
                               GText(
                                 'Date Created: ${board['dateCreated']}',
-                                style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                                style: const TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey),
                               ),
                           ],
                         ),

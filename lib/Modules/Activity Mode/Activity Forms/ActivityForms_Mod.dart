@@ -12,7 +12,6 @@ import 'CreatePLS5Form_Widget.dart';
 import 'package:searchable_listview/searchable_listview.dart';
 import 'package:collection/collection.dart';
 
-
 class ActivityForms_Mod extends StatefulWidget {
   const ActivityForms_Mod({super.key});
 
@@ -20,19 +19,31 @@ class ActivityForms_Mod extends StatefulWidget {
   _ActivityFormsModState createState() => _ActivityFormsModState();
 }
 
-class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeepAliveClientMixin {
+class _ActivityFormsModState extends State<ActivityForms_Mod>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   String selectedType = 'All';
   String selectedStatus = 'All';
   String selectedAge = 'All';
   String selectedPediatricName = 'All';
+
   final String _searchQuery = '';
   final ValueNotifier<String> searchQueryNotifier = ValueNotifier<String>('');
   List<ActivityForms> _activityForms = [];
   final List<String> formTypes = ['All', 'PLS-5', 'Brigance'];
-  final List<String> formStatuses = ['All', 'To Do', 'In Progress', 'Successful'];
-  final List<String> formAges = ['All', '3 years old', '4 years old', '5 years old'];
+  final List<String> formStatuses = [
+    'All',
+    'To Do',
+    'In Progress',
+    'Successful'
+  ];
+  final List<String> formAges = [
+    'All',
+    '3 years old',
+    '4 years old',
+    '5 years old'
+  ];
   List<String> pediatricNames = ['All'];
   late Set<String> _therapistNames = {'All'};
   late StreamSubscription<QuerySnapshot> _pls5Subscription;
@@ -103,12 +114,14 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
 
   List<ActivityForms> _processFormsForDisplay(List<ActivityForms> allForms) {
     // Group forms by patient name and form type
-    final groupedForms = groupBy(allForms, (ActivityForms form) => '${form.name}|${form.formType}');
+    final groupedForms = groupBy(
+        allForms, (ActivityForms form) => '${form.name}|${form.formType}');
 
     // For each patient and form type, get the most recent form and calculate created/modified dates
     return groupedForms.entries.map((entry) {
       final patientForms = entry.value;
-      patientForms.sort((a, b) => (b.date ?? DateTime.now()).compareTo(a.date ?? DateTime.now()));
+      patientForms.sort((a, b) =>
+          (b.date ?? DateTime.now()).compareTo(a.date ?? DateTime.now()));
 
       final mostRecentForm = patientForms.first;
       final oldestDate = patientForms
@@ -135,9 +148,12 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
         pls5Rows: mostRecentForm.pls5Rows,
         therapist: mostRecentForm.therapist,
         dateModified: newestDate,
-        pls5AuditoryComprehensionSummary: mostRecentForm.pls5AuditoryComprehensionSummary,
-        pls5ExpressiveCommunicationSummary: mostRecentForm.pls5ExpressiveCommunicationSummary,
-        pls5TotalLanguageScoreSummary: mostRecentForm.pls5TotalLanguageScoreSummary,
+        pls5AuditoryComprehensionSummary:
+        mostRecentForm.pls5AuditoryComprehensionSummary,
+        pls5ExpressiveCommunicationSummary:
+        mostRecentForm.pls5ExpressiveCommunicationSummary,
+        pls5TotalLanguageScoreSummary:
+        mostRecentForm.pls5TotalLanguageScoreSummary,
         isFavorite: mostRecentForm.isFavorite,
         otherComments: mostRecentForm.otherComments,
         briganceRows: mostRecentForm.briganceRows,
@@ -145,13 +161,14 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
     }).toList();
   }
 
-  void _processSnapshot(QuerySnapshot snapshot, String formType) {
+  Future<void> _processSnapshot(QuerySnapshot snapshot, String formType) async {
     final forms = <ActivityForms>[];
 
     for (final doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data != null) {
         final form = _mapDocumentToActivityForm(data, formType);
+        print("Mapped form: $form");
         forms.add(form);
       }
     }
@@ -162,18 +179,23 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
       } else if (formType == 'Brigance') {
         _briganceForms = forms;
       }
-      _activityForms = _processFormsForDisplay([..._pls5Forms, ..._briganceForms]);
+      _activityForms =
+          _processFormsForDisplay([..._pls5Forms, ..._briganceForms]);
     });
   }
 
-  ActivityForms _mapDocumentToActivityForm(Map<String, dynamic> data, String formType) {
+  ActivityForms _mapDocumentToActivityForm(
+      Map<String, dynamic> data, String formType) {
     final name = data['name'] ?? '';
     final bool isFavorite = data['isFavorite'] ?? false;
 
-    final activityBoardsValue = data['activity_board_dropdown'];
-    final activityBoards = activityBoardsValue is String
-        ? activityBoardsValue.split(',')
-        : activityBoardsValue?.toString().split(',') ?? [];
+    final activityBoardValue = data['activity_board_dropdown'];
+    List<String> activityBoards = [];
+    if (activityBoardValue != null &&
+        activityBoardValue is String &&
+        activityBoardValue.isNotEmpty) {
+      activityBoards = [activityBoardValue];
+    }
 
     DateTime date;
     if (data['date'] != null) {
@@ -194,7 +216,8 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
       if (pls5RowsData is List) {
         pls5Rows = pls5RowsData.map((row) {
           if (row is Map) {
-            return row.map((key, value) => MapEntry(key.toString(), value.toString()));
+            return row.map(
+                    (key, value) => MapEntry(key.toString(), value.toString()));
           } else {
             return <String, String>{};
           }
@@ -216,10 +239,13 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
         pls5Rows: pls5Rows,
         therapist: data['therapist'] ?? '',
         dateModified: date,
-        pls5AuditoryComprehensionSummary: data['auditory_comprehension_summary'],
-        pls5ExpressiveCommunicationSummary: data['expressive_communication_summary'],
+        pls5AuditoryComprehensionSummary:
+        data['auditory_comprehension_summary'],
+        pls5ExpressiveCommunicationSummary:
+        data['expressive_communication_summary'],
         pls5TotalLanguageScoreSummary: data['total_language_score_summary'],
         isFavorite: isFavorite,
+        isActivityBoard: data['isActivityBoard'] ?? false,
       );
     } else {
       List<Map<String, String>> briganceRows = [];
@@ -227,7 +253,8 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
       if (briganceRowsData is List) {
         briganceRows = briganceRowsData.map((row) {
           if (row is Map) {
-            return row.map((key, value) => MapEntry(key.toString(), value.toString()));
+            return row.map(
+                    (key, value) => MapEntry(key.toString(), value.toString()));
           } else {
             return <String, String>{};
           }
@@ -250,6 +277,7 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
         therapist: data['therapist'] ?? '',
         dateModified: date,
         isFavorite: isFavorite,
+        isActivityBoard: data['isActivityBoard'] ?? false,
       );
     }
   }
@@ -279,7 +307,8 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
           context: context,
           builder: (context) => AlertDialog(
             title: GText('Confirm Deletion'),
-            content: GText('Are you sure you want to delete all ${item.formType} forms for ${item.name}?'),
+            content: GText(
+                'Are you sure you want to delete all ${item.formType} forms for ${item.name}?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -291,17 +320,24 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
               ),
             ],
           ),
-        ) ?? false;
+        ) ??
+            false;
 
         if (shouldDelete) {
-          await _deleteFormsForPatient(userId, item.formType == 'PLS-5' ? 'PLS5Form' : 'BriganceForm', item.name);
+          await _deleteFormsForPatient(
+              userId,
+              item.formType == 'PLS-5' ? 'PLS5Form' : 'BriganceForm',
+              item.name);
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: GText('All ${item.formType} forms for ${item.name} deleted successfully')),
+            SnackBar(
+                content: GText(
+                    'All ${item.formType} forms for ${item.name} deleted successfully')),
           );
 
           setState(() {
-            _activityForms.removeWhere((form) => form.name == item.name && form.formType == item.formType);
+            _activityForms.removeWhere((form) =>
+            form.name == item.name && form.formType == item.formType);
           });
         }
       }
@@ -312,7 +348,8 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
     }
   }
 
-  Future<void> _deleteFormsForPatient(String userId, String collectionName, String patientName) async {
+  Future<void> _deleteFormsForPatient(
+      String userId, String collectionName, String patientName) async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('user')
         .doc(userId)
@@ -333,7 +370,8 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
   Widget build(BuildContext context) {
     super.build(context);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final color = isDarkMode ? const Color.fromRGBO(19, 18, 19, 1.0) : Colors.grey[200];
+    final color =
+    isDarkMode ? const Color.fromRGBO(19, 18, 19, 1.0) : Colors.grey[200];
 
     return Scaffold(
       drawer: const DrawerWidget(),
@@ -350,7 +388,9 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                     'Create Activity Form',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize ?? 20.0,
+                      fontSize:
+                      Theme.of(context).textTheme.bodyLarge?.fontSize ??
+                          20.0,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -359,7 +399,7 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const CreatePLS5Form_Widget(),
+                          builder: (context) => CreatePLS5Form_Widget(),
                         ),
                       );
                     },
@@ -368,7 +408,11 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                           vertical: 15, horizontal: 20),
                       textStyle: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: Theme.of(context).textTheme.displaySmall?.fontSize ?? 16.0,
+                        fontSize: Theme.of(context)
+                            .textTheme
+                            .displaySmall
+                            ?.fontSize ??
+                            16.0,
                       ),
                     ),
                     child: GText('PLS-5'),
@@ -379,8 +423,7 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                          const CreateBriganceForm_Widget(),
+                          builder: (context) => const CreateBriganceForm_Widget(),
                         ),
                       );
                     },
@@ -389,7 +432,11 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                           vertical: 15, horizontal: 20),
                       textStyle: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: Theme.of(context).textTheme.displaySmall?.fontSize ?? 16.0,
+                        fontSize: Theme.of(context)
+                            .textTheme
+                            .displaySmall
+                            ?.fontSize ??
+                            16.0,
                       ),
                     ),
                     child: GText('Brigance'),
@@ -415,7 +462,6 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
   }
 
   Widget _buildActivityFormsList(BuildContext context) {
-
     List<ActivityForms> filteredForms = _activityForms.where((item) {
       final matchesType =
           selectedType == 'All' || item.formType == selectedType;
@@ -424,8 +470,10 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
       final matchesAge =
           selectedAge == 'All' || '${item.age} years old' == selectedAge;
       final matchesPediatricName = selectedPediatricName == 'All' ||
-          (item.formType == 'PLS-5' && item.therapist == selectedPediatricName) ||
-          (item.formType == 'Brigance' && item.therapist == selectedPediatricName);
+          (item.formType == 'PLS-5' &&
+              item.therapist == selectedPediatricName) ||
+          (item.formType == 'Brigance' &&
+              item.therapist == selectedPediatricName);
       final matchesSearchQuery = item.activityFormName
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
@@ -464,7 +512,9 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
       filter: (query) {
         List<ActivityForms> filteredForms = [];
         for (var form in _activityForms) {
-          if (form.activityFormName.toLowerCase().contains(query.toLowerCase())) {
+          if (form.activityFormName
+              .toLowerCase()
+              .contains(query.toLowerCase())) {
             filteredForms.add(form);
           }
         }
@@ -474,7 +524,6 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
   }
 
   Widget _buildDropdownButtons(BuildContext context) {
-
     return Row(
       children: [
         Expanded(
@@ -541,7 +590,6 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
     assert(items.contains(value));
 
     return DropdownButtonFormField<String>(
-
       decoration: InputDecoration(
         labelText: label,
         contentPadding:
@@ -562,11 +610,26 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
   }
 
   Widget _activityFormItem(ActivityForms item) {
+    if (item.isActivityBoard) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade200,
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: GText(
+          'Activity Board',
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
     Color typeColor = Colors.grey;
     Color statusColor = Colors.grey;
     Color ageColor = Colors.grey;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final color = isDarkMode ? const Color.fromRGBO(19, 18, 19, 1.0) : Colors.grey[200];
+    final color =
+    isDarkMode ? const Color.fromRGBO(19, 18, 19, 1.0) : Colors.grey[200];
 
     if (item.formType == 'PLS-5') {
       typeColor = const Color.fromARGB(255, 217, 0, 255);
@@ -664,31 +727,43 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    ...item.activityBoards.map(
-                          (board) => Row(
-                        children: [
-                          _buildTag(
-                            text: board,
-                            color: Colors.deepPurple,
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                    if (item.activityBoards.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade200,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          'Activity Board: ${item.activityBoards.first}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      )
+                    else
+                      _buildTag(
+                        text: 'No board',
+                        color: Colors.grey,
                       ),
-                    ),
+                    const SizedBox(width: 8),
                   ],
                 ),
                 const SizedBox(height: 8),
-                GText('Pediatric Name: ${item.therapist}'),
+                GText('Pediatric Name: ${item.name}'),
+                const SizedBox(height: 4),
+                GText('Therapist Name: ${item.therapist}'),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    GText('Created: ${DateFormat.yMMMd().format(item.dateCreated)}'),
+                    GText(
+                        'Created: ${DateFormat.yMMMd().format(item.dateCreated)}'),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    GText('Modified: ${DateFormat.yMMMd().format(item.dateModified)}'),
+                    GText(
+                        'Modified: ${DateFormat.yMMMd().format(item.dateModified)}'),
                   ],
                 ),
               ],
@@ -754,9 +829,13 @@ class _ActivityFormsModState extends State<ActivityForms_Mod> with AutomaticKeep
     Widget formWidget;
 
     if (item.formType == 'PLS-5') {
-      formWidget = CreatePLS5Form_Widget(initialData: item);
+      formWidget = CreatePLS5Form_Widget(
+        initialData: item,
+      );
     } else if (item.formType == 'Brigance') {
-      formWidget = CreateBriganceForm_Widget(initialData: item);
+      formWidget = CreateBriganceForm_Widget(
+        initialData: item,
+      );
     } else {
       return;
     }

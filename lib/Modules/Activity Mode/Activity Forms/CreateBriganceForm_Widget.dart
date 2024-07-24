@@ -8,37 +8,70 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' hide Column, Row;
 import '../../../Widgets/Drawer_Widget.dart';
-import '../Activity Boards/ActivityBoards.dart';
 import 'ActivityForms.dart';
 import 'Print_UtilsInterface.dart';
 import 'Print_Utils.dart';
 import 'Rewards.dart';
 import 'SpinWheel_Widget.dart';
+import '/Screens/ViewCommBoard_Screen.dart';
 
 class CreateBriganceForm_Widget extends StatefulWidget {
   final ActivityForms? initialData;
 
-  const CreateBriganceForm_Widget({super.key, this.initialData});
+  const CreateBriganceForm_Widget({
+    super.key,
+    this.initialData,
+  });
 
   @override
-  _CreateBriganceForm_WidgetState createState() => _CreateBriganceForm_WidgetState();
+  _CreateBriganceForm_WidgetState createState() =>
+      _CreateBriganceForm_WidgetState();
 }
 
 class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
   List<List<TextEditingController>> textControllers = [];
   final _formKey = GlobalKey<FormBuilderState>();
   String _selectedStatus = 'To Do';
-  String _selectedActivityBoard = '';
-  final GlobalKey<_BriganceTableState> briganceTableKey = GlobalKey<_BriganceTableState>();
+  final GlobalKey<_BriganceTableState> briganceTableKey =
+  GlobalKey<_BriganceTableState>();
+  String? _userEmail;
+  late String _selectedActivityBoard;
+  List<Map<String, dynamic>> _activityBoards = [];
 
   @override
   void initState() {
     super.initState();
+    _getUserEmail();
     _initializeTextControllers();
     _selectedStatus = widget.initialData?.formStatus ?? 'To Do';
+    _selectedActivityBoard =
+    widget.initialData?.activityBoards.isNotEmpty == true
+        ? widget.initialData!.activityBoards.first
+        : '';
+    _fetchActivityBoards();
+  }
 
-    if (widget.initialData?.activityBoards != null) {
-      _selectedActivityBoard = widget.initialData!.activityBoards.join(', ');
+  void _getUserEmail() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _userEmail = user.email;
+      });
+      _fetchActivityBoards();
+    } else {
+      print("No user is currently signed in.");
+    }
+  }
+
+  Future<void> _fetchActivityBoards() async {
+    if (_userEmail != null) {
+      final boards =
+      await ActivityBoardService.fetchActivityBoards(_userEmail!);
+      setState(() {
+        _activityBoards = boards;
+      });
+    } else {
+      print("Error: userEmail is null");
     }
   }
 
@@ -108,7 +141,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
         );
         return;
       }
-      await printUtils.savePdf(context, pdf, 'YugTalk - Modified Brigance Form.pdf');
+      await printUtils.savePdf(
+          context, pdf, 'YugTalk - Modified Brigance Form.pdf');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save PDF: ${e.toString()}')),
@@ -120,7 +154,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
     try {
       final bytes = await _generateExcel(_selectedActivityBoard);
       final PrintUtilsInterface printUtils = PrintUtils();
-      await printUtils.saveExcel(context, bytes, 'YugTalk - Modified Brigance Form.xlsx');
+      await printUtils.saveExcel(
+          context, bytes, 'YugTalk - Modified Brigance Form.xlsx');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to export Excel: ${e.toString()}')),
@@ -137,9 +172,9 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Bold.ttf"));
       final robotoRegular =
       pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Regular.ttf"));
-      String formattedDate = formData['date'] != null ? DateFormat('yyyy-MM-dd')
-          .format(formData['date']) : DateFormat('yyyy-MM-dd').format(
-          DateTime.now());
+      String formattedDate = formData['date'] != null
+          ? DateFormat('yyyy-MM-dd').format(formData['date'])
+          : DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       pdf.addPage(
         pw.MultiPage(
@@ -167,13 +202,10 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
             );
           },
           build: (pw.Context context) => [
-            pw.Header(
-                level: 0,
-                child: pw.Container()),
+            pw.Header(level: 0, child: pw.Container()),
             pw.Text('Patient Information:',
                 style: pw.TextStyle(font: robotoBold, fontSize: 12)),
-            pw.Text(
-                'Name: ${formData['name'] ?? 'John Doe'}',
+            pw.Text('Name: ${formData['name'] ?? 'John Doe'}',
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
             pw.Text('Age: ${formData['age'] ?? '5'}',
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
@@ -181,12 +213,12 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
             pw.Text('Therapist: ${formData['therapist'] ?? 'Trish Corpus'}',
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
-            pw.Text(
-                'Date: $formattedDate',
+            pw.Text('Date: $formattedDate',
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
             pw.Divider(),
             pw.SizedBox(height: 5),
-            pw.Text('Form Title: ${formData['activityFormName'] ?? 'Modified Brigance Activity Form'}',
+            pw.Text(
+                'Form Title: ${formData['activityFormName'] ?? 'Modified Brigance Activity Form'}',
                 style: pw.TextStyle(font: robotoBold, fontSize: 12)),
             pw.Text('Form Status: $_selectedStatus',
                 style: pw.TextStyle(font: robotoRegular, fontSize: 12)),
@@ -198,11 +230,17 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
             pw.SizedBox(height: 10),
             pw.Divider(),
             pw.SizedBox(height: 15),
-            _buildSummarySection('Other Comments',
-                formData['other_comments'] ?? 'Nothing worthy to mention', robotoBold, robotoRegular),
+            _buildSummarySection(
+                'Other Comments',
+                formData['other_comments'] ?? 'Nothing worthy to mention',
+                robotoBold,
+                robotoRegular),
             pw.SizedBox(height: 25),
-            _buildSummarySection('Next Steps', formData['next_steps'] ?? 'No further steps required',
-                robotoBold, robotoRegular),
+            _buildSummarySection(
+                'Next Steps',
+                formData['next_steps'] ?? 'No further steps required',
+                robotoBold,
+                robotoRegular),
             pw.SizedBox(height: 20),
             pw.Divider(),
             pw.SizedBox(height: 15),
@@ -216,7 +254,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Form is not valid. Please check the inputs')),
+        const SnackBar(
+            content: Text('Form is not valid. Please check the inputs')),
       );
     }
 
@@ -241,21 +280,11 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
 
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       Map<String, dynamic> formData = _formKey.currentState!.value;
-      sheet
-          .getRangeByName('A1')
-          .columnWidth = 22;
-      sheet
-          .getRangeByName('B1')
-          .columnWidth = 30;
-      sheet
-          .getRangeByName('C1')
-          .columnWidth = 30;
-      sheet
-          .getRangeByName('D1')
-          .columnWidth = 30;
-      sheet
-          .getRangeByName('E1')
-          .columnWidth = 30;
+      sheet.getRangeByName('A1').columnWidth = 22;
+      sheet.getRangeByName('B1').columnWidth = 30;
+      sheet.getRangeByName('C1').columnWidth = 30;
+      sheet.getRangeByName('D1').columnWidth = 30;
+      sheet.getRangeByName('E1').columnWidth = 30;
 
       //Patient's Info
       sheet.getRangeByName('A1:E1').merge();
@@ -273,10 +302,13 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       sheet.getRangeByName('A5').setText('Gender');
       sheet.getRangeByName('B5').setText(formData['gender'] ?? 'Male');
       sheet.getRangeByName('A6').setText('Therapist');
-      sheet.getRangeByName('B6').setText(
-          formData['therapist'] ?? 'Trish Corpus');
+      sheet
+          .getRangeByName('B6')
+          .setText(formData['therapist'] ?? 'Trish Corpus');
       sheet.getRangeByName('A7').setText('Date');
-      String formattedDate = formData['date'] != null ? DateFormat('yyyy-MM-dd').format(formData['date']) : DateFormat('yyyy-MM-dd').format(DateTime.now());
+      String formattedDate = formData['date'] != null
+          ? DateFormat('yyyy-MM-dd').format(formData['date'])
+          : DateFormat('yyyy-MM-dd').format(DateTime.now());
       sheet.getRangeByName('B7').setText(formattedDate);
       sheet.getRangeByName('A9').setText('Form Title');
       sheet.getRangeByName('B9').setText(
@@ -284,13 +316,15 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       sheet.getRangeByName('A10').setText('Form Status');
       sheet.getRangeByName('B10').setText(_selectedStatus);
       sheet.getRangeByName('A11').setText('Activity Board');
-      sheet
-          .getRangeByName('B11')
-          .setText(selectedActivityBoard);
+      sheet.getRangeByName('B11').setText(selectedActivityBoard);
       sheet.getRangeByName('A13').setText('Other Comments');
-      sheet.getRangeByName('B13').setText(formData['other_comments'] ?? 'Nothing worthy to mention');
+      sheet
+          .getRangeByName('B13')
+          .setText(formData['other_comments'] ?? 'Nothing worthy to mention');
       sheet.getRangeByName('A14').setText('Next Steps');
-      sheet.getRangeByName('B14').setText(formData['next_steps'] ?? 'No further steps required');
+      sheet
+          .getRangeByName('B14')
+          .setText(formData['next_steps'] ?? 'No further steps required');
 
       //Modified Brigance Table
       sheet.getRangeByName('A16:B16').merge();
@@ -299,7 +333,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       sheet.getRangeByName('C16').setText('Scoring');
       sheet.getRangeByName('A16:E16').cellStyle.hAlign = HAlignType.center;
       sheet.getRangeByName('A16:E16').cellStyle.bold = true;
-      sheet.getRangeByName('A16:E16').cellStyle.borders.all.lineStyle = LineStyle.thin;
+      sheet.getRangeByName('A16:E16').cellStyle.borders.all.lineStyle =
+          LineStyle.thin;
       sheet.getRangeByName('A16:E16').cellStyle.borders.all.color = '#000000';
 
       sheet.getRangeByName('A17').setText('Domain');
@@ -309,7 +344,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       sheet.getRangeByName('E17').setText('Subtotal Score');
       sheet.getRangeByName('A17:E17').cellStyle.hAlign = HAlignType.center;
       sheet.getRangeByName('A17:E17').cellStyle.bold = true;
-      sheet.getRangeByName('A17:E17').cellStyle.borders.all.lineStyle = LineStyle.thin;
+      sheet.getRangeByName('A17:E17').cellStyle.borders.all.lineStyle =
+          LineStyle.thin;
       sheet.getRangeByName('A17:E17').cellStyle.borders.all.color = '#000000';
 
       for (int rowIndex = 0; rowIndex < textControllers.length; rowIndex++) {
@@ -324,7 +360,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Form is not valid. Please check the inputs')),
+        const SnackBar(
+            content: Text('Form is not valid. Please check the inputs')),
       );
       return [];
     }
@@ -472,6 +509,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
   void _handleActivityBoardChanged(String newValue) {
     setState(() {
       _selectedActivityBoard = newValue;
+      print(
+          "Activity board changed to: $_selectedActivityBoard"); // Debug print
     });
   }
 
@@ -481,8 +520,34 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
     });
   }
 
+  Future<String?> _getBoardIDFromName(String boardName) async {
+    try {
+      print("Searching for board: $boardName");
+
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .where('name', isEqualTo: boardName)
+          .get();
+
+      print("Query result size: ${querySnapshot.docs.length}");
+
+      if (querySnapshot.docs.isNotEmpty) {
+        String boardId = querySnapshot.docs.first.id;
+        print("Found board ID: $boardId");
+        return boardId;
+      } else {
+        print("No matching board found");
+      }
+    } catch (e) {
+      print("Error fetching board ID: $e");
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    print(
+        "Current selected activity board: $_selectedActivityBoard"); // Debug print
     return Scaffold(
       appBar: AppBar(
         title: const Text('Brigance Form'),
@@ -506,9 +571,7 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
             },
           ),
           SetStatus(
-              initialStatus: _selectedStatus,
-              onChanged: _updateSelectedStatus
-          ),
+              initialStatus: _selectedStatus, onChanged: _updateSelectedStatus),
           const SizedBox(width: 10),
         ],
       ),
@@ -529,7 +592,8 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
                     children: [
                       FormBuilderTextField(
                         name: 'activityFormName',
-                        initialValue: widget.initialData?.activityFormName ?? '',
+                        initialValue:
+                        widget.initialData?.activityFormName ?? '',
                         decoration: const InputDecoration(
                           labelText: 'Title',
                           labelStyle: TextStyle(
@@ -544,19 +608,33 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
                         children: [
                           Expanded(
                             child: ActivityBoardDropdown(
-                              initialValue: widget.initialData?.activityBoards.isNotEmpty == true
-                                  ? widget.initialData!.activityBoards.first
-                                  : '',
+                              initialValue: _selectedActivityBoard,
                               onChanged: _handleActivityBoardChanged,
-
+                              onGoToActivityBoard: (String boardName) async {
+                                String? boardID =
+                                await _getBoardIDFromName(boardName);
+                                if (boardID != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CommBoard_View(
+                                        boardID: boardID,
+                                        userID: FirebaseAuth.instance.currentUser?.email ?? '',
+                                        //showBackButton: true,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                        Text('Activity board not found')),
+                                  );
+                                }
+                              },
+                              userEmail: FirebaseAuth.instance.currentUser?.email,
+                              activityBoards: _activityBoards,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Navigation logic here...
-                            },
-                            child: const Text('Go to Activity Board'),
                           ),
                         ],
                       ),
@@ -617,57 +695,113 @@ class _CreateBriganceForm_WidgetState extends State<CreateBriganceForm_Widget> {
 class ActivityBoardDropdown extends StatefulWidget {
   final String initialValue;
   final Function(String) onChanged;
+  final Function(String) onGoToActivityBoard;
+  final String? userEmail;
+  final List<Map<String, dynamic>> activityBoards;
 
-  const ActivityBoardDropdown({super.key, required this.initialValue, required this.onChanged});
+  const ActivityBoardDropdown({
+    Key? key,
+    required this.initialValue,
+    required this.onChanged,
+    required this.onGoToActivityBoard,
+    this.userEmail,
+    required this.activityBoards,
+  }) : super(key: key);
 
   @override
   _ActivityBoardDropdownState createState() => _ActivityBoardDropdownState();
 }
 
 class _ActivityBoardDropdownState extends State<ActivityBoardDropdown> {
-  late String _selectedActivityBoard;
+  String _selectedActivityBoard = '';
 
   @override
   void initState() {
     super.initState();
-    _selectedActivityBoard = widget.initialValue;
+    _initializeSelectedBoard();
+  }
+
+  @override
+  void didUpdateWidget(ActivityBoardDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue ||
+        widget.activityBoards != oldWidget.activityBoards) {
+      _initializeSelectedBoard();
+    }
+  }
+
+  void _initializeSelectedBoard() {
+    print("Initializing selected board. Initial value: ${widget.initialValue}");
+    print("Activity boards: ${widget.activityBoards.map((b) => b['name']).toList()}");
+
+    if (widget.initialValue.isNotEmpty &&
+        widget.activityBoards.any((board) => board['name'] == widget.initialValue)) {
+      setState(() {
+        _selectedActivityBoard = widget.initialValue;
+      });
+      print("Selected board initialized to: $_selectedActivityBoard");
+    } else if (widget.activityBoards.isNotEmpty) {
+      setState(() {
+        _selectedActivityBoard = widget.activityBoards.first['name'] as String;
+      });
+      print("Selected board set to first available: $_selectedActivityBoard");
+    } else {
+      setState(() {
+        _selectedActivityBoard = '';
+      });
+      print("No valid board found, selected board cleared");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FormBuilderDropdown(
-      name: 'activity_board_dropdown',
-      initialValue: _selectedActivityBoard,
-      decoration: const InputDecoration(
-        labelText: 'Activity Board',
-        labelStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      onChanged: (newValue) {
-        setState(() {
-          _selectedActivityBoard = newValue.toString();
-        });
-        widget.onChanged(newValue.toString());
-      },
-      items: [
-        const DropdownMenuItem(
-          value: '',
-          child: Text(
-            'Select Activity Board',
-            style: TextStyle(fontSize: 16),
+    print("Building dropdown with selected value: $_selectedActivityBoard");
+    return Row(
+      children: [
+        Expanded(
+          child: FormBuilderDropdown<String>(
+            name: 'activity_board_dropdown',
+            initialValue: _selectedActivityBoard,
+            decoration: const InputDecoration(
+              labelText: 'Activity Board',
+              labelStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onChanged: (newValue) {
+              print("Dropdown value changed to: $newValue");
+              if (newValue != null) {
+                setState(() {
+                  _selectedActivityBoard = newValue;
+                });
+                widget.onChanged(newValue);
+              }
+            },
+            items: [
+              if (_selectedActivityBoard.isEmpty)
+                const DropdownMenuItem<String>(
+                  value: '',
+                  child: Text('Select Activity Board', style: TextStyle(fontSize: 14)),
+                ),
+              ...widget.activityBoards.map((board) {
+                String boardName = board['name'] as String;
+                print("Creating DropdownMenuItem for board: $boardName");
+                return DropdownMenuItem<String>(
+                  value: boardName,
+                  child: Text(boardName, style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+            ],
           ),
         ),
-        ...activityBoardsData
-            .map((activityBoard) => DropdownMenuItem(
-          value: activityBoard.boardName,
-          child: Text(
-            activityBoard.boardName,
-            style: const TextStyle(fontSize: 16),
-          ),
-        ))
-            .toList(),
+        const SizedBox(width: 10),
+        ElevatedButton(
+          onPressed: _selectedActivityBoard.isNotEmpty
+              ? () => widget.onGoToActivityBoard(_selectedActivityBoard)
+              : null,
+          child: const Text('Go to Activity Board'),
+        ),
       ],
     );
   }
@@ -678,8 +812,11 @@ class BriganceTable extends StatefulWidget {
   final Function(List<List<TextEditingController>>) onSave;
   final FocusNode? initialFocusNode;
 
-
-  const BriganceTable({super.key, this.initialData, required this.onSave, this.initialFocusNode});
+  const BriganceTable(
+      {super.key,
+        this.initialData,
+        required this.onSave,
+        this.initialFocusNode});
 
   @override
   _BriganceTableState createState() => _BriganceTableState();
@@ -700,7 +837,8 @@ class _BriganceTableState extends State<BriganceTable> {
   void addRow(List<TextEditingController> newRowControllers) {
     setState(() {
       textControllers.add(newRowControllers);
-      List<FocusNode> newRowFocusNodes = newRowControllers.map((_) => FocusNode()).toList();
+      List<FocusNode> newRowFocusNodes =
+      newRowControllers.map((_) => FocusNode()).toList();
       focusNodes.add(newRowFocusNodes);
     });
   }
@@ -728,7 +866,8 @@ class _BriganceTableState extends State<BriganceTable> {
   }
 
   void _initializeTextControllers() {
-    if (widget.initialData != null && widget.initialData!.briganceRows.isNotEmpty) {
+    if (widget.initialData != null &&
+        widget.initialData!.briganceRows.isNotEmpty) {
       textControllers = widget.initialData!.briganceRows.map((row) {
         return [
           TextEditingController(text: row['Domain'] ?? ''),
@@ -769,7 +908,6 @@ class _BriganceTableState extends State<BriganceTable> {
         ],
       ];
     }
-
   }
 
   void resetTable() {
@@ -1042,9 +1180,7 @@ class patientInfo extends StatelessWidget {
           Expanded(
             child: FormBuilderTextField(
               name: 'name',
-              initialValue: initialData != null
-                  ? initialData!.name
-                  : '',
+              initialValue: initialData != null ? initialData!.name : '',
               decoration: const InputDecoration(
                 labelText: 'Name',
                 labelStyle: TextStyle(
@@ -1256,6 +1392,39 @@ class _SetStatusState extends State<SetStatus> {
   }
 }
 
+class ActivityBoardService {
+  static Future<List<Map<String, dynamic>>> fetchActivityBoards(
+      String userEmail) async {
+    try {
+      print("Fetching activity boards for userEmail: $userEmail");
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .where('ownerID', isEqualTo: userEmail)
+          .where('isActivityBoard', isEqualTo: true)
+          .get();
+
+      print("Fetched ${querySnapshot.docs.length} activity boards");
+
+      List<Map<String, dynamic>> boards = querySnapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'name': data['name'],
+          'category': data['category'] ?? 'None',
+          'language': data['language'] ?? 'Filipino',
+          'rows': data['rows'] ?? 4,
+          'columns': data['columns'] ?? 4,
+        };
+      }).toList();
+
+      return boards;
+    } catch (e) {
+      print("Error fetching activity boards: $e");
+      return [];
+    }
+  }
+}
+
 class SavePrintButtons extends StatefulWidget {
   final ActivityForms? formData;
   final List<List<TextEditingController>> textControllers;
@@ -1264,7 +1433,6 @@ class SavePrintButtons extends StatefulWidget {
   final void Function(BuildContext) onShowSaveOptions;
   final void Function(String) onStatusChanged;
   final GlobalKey<_BriganceTableState> briganceTableKey;
-
 
   const SavePrintButtons({
     required this.formData,
@@ -1289,7 +1457,8 @@ class SavePrintButtons extends StatefulWidget {
 class _SavePrintButtonsState extends State<SavePrintButtons> {
   DateTime? lastSaveTime;
   bool _isLoading = false;
-  final GlobalKey<_DropdownHistoryState> _dropdownHistoryKey = GlobalKey<_DropdownHistoryState>();
+  final GlobalKey<_DropdownHistoryState> _dropdownHistoryKey =
+  GlobalKey<_DropdownHistoryState>();
 
   @override
   void initState() {
@@ -1316,7 +1485,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
       'Duration': textControllers[2].text,
       'No. Correct * Value': textControllers[3].text,
       'Subtotal Score': textControllers[4].text,
-    }).toList();
+    })
+        .toList();
 
     return {
       ...formData,
@@ -1336,7 +1506,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       if (querySnapshot.size == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found with the logged-in email')),
+          const SnackBar(
+              content: Text('No user found with the logged-in email')),
         );
         return [];
       }
@@ -1357,7 +1528,11 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
         final status = data['formStatus'];
         final docName = data['name'];
         return date != null
-            ? {'date': (date as Timestamp).toDate(), 'status': status, 'name': docName}
+            ? {
+          'date': (date as Timestamp).toDate(),
+          'status': status,
+          'name': docName
+        }
             : null;
       })
           .where((date) => date != null)
@@ -1365,16 +1540,19 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
           .toList();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error occurred when trying to fetch dates: $e')),
+        SnackBar(
+            content: Text('Error occurred when trying to fetch dates: $e')),
       );
       return [];
     }
   }
 
   Future<void> saveToFirestore() async {
-    if (lastSaveTime != null && DateTime.now().difference(lastSaveTime!) < const Duration(seconds: 5)) {
+    if (lastSaveTime != null &&
+        DateTime.now().difference(lastSaveTime!) < const Duration(seconds: 5)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Currently saving the previous save. Please wait')),
+        const SnackBar(
+            content: Text('Currently saving the previous save. Please wait')),
       );
       return;
     }
@@ -1386,7 +1564,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
     try {
       if (!widget.formKey.currentState!.saveAndValidate()) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please complete the form before saving')),
+          const SnackBar(
+              content: Text('Please complete the form before saving')),
         );
         return;
       }
@@ -1403,6 +1582,7 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
       );
 
       String? userEmail = FirebaseAuth.instance.currentUser?.email;
+      print("Current user email: $userEmail");
 
       final querySnapshot = await FirebaseFirestore.instance
           .collection('user')
@@ -1411,12 +1591,14 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       if (querySnapshot.size == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found with the logged-in email')),
+          const SnackBar(
+              content: Text('No user found with the logged-in email')),
         );
         return;
       }
 
       final userDocumentId = querySnapshot.docs.first.id;
+      print("User document ID: $userDocumentId"); //
 
       final briganceQuerySnapshot = await FirebaseFirestore.instance
           .collection('user')
@@ -1426,14 +1608,18 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       int newDocId = 1;
       if (briganceQuerySnapshot.size > 0) {
-        final docIds = briganceQuerySnapshot.docs.map((doc) => int.tryParse(doc.id)).where((id) => id != null).cast<int>().toList();
+        final docIds = briganceQuerySnapshot.docs
+            .map((doc) => int.tryParse(doc.id))
+            .where((id) => id != null)
+            .cast<int>()
+            .toList();
         if (docIds.isNotEmpty) {
           newDocId = docIds.reduce((a, b) => a > b ? a : b) + 1;
         }
-
       }
 
       final formData = _getFormData();
+      print("Form data before saving: $formData");
       formData['date'] = dateWithCurrentTime;
 
       await FirebaseFirestore.instance
@@ -1443,12 +1629,15 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
           .doc(newDocId.toString())
           .set(formData);
 
+      print("Document saved. Verifying saved data...");
+
       lastSaveTime = DateTime.now();
 
       final updatedDatesWithStatus = await _fetchDates(formData['name']);
 
       setState(() {
-        _dropdownHistoryKey.currentState?._datesWithStatus = updatedDatesWithStatus;
+        _dropdownHistoryKey.currentState?._datesWithStatus =
+            updatedDatesWithStatus;
         _dropdownHistoryKey.currentState?._selectedDate = null;
       });
 
@@ -1477,7 +1666,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       if (querySnapshot.size == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found with the logged-in email')),
+          const SnackBar(
+              content: Text('No user found with the logged-in email')),
         );
         return [];
       }
@@ -1498,16 +1688,20 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
         final status = data['formStatus'];
         final docName = data['name'];
         return date != null
-            ? {'date': (date as Timestamp).toDate(), 'status': status, 'name': docName}
+            ? {
+          'date': (date as Timestamp).toDate(),
+          'status': status,
+          'name': docName
+        }
             : null;
-        })
+      })
           .where((date) => date != null)
           .cast<Map<String, dynamic>>()
           .toList();
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error occurred when trying to fetch dates: $e')),
+        SnackBar(
+            content: Text('Error occurred when trying to fetch dates: $e')),
       );
       return [];
     }
@@ -1524,7 +1718,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       if (querySnapshot.size == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No user found with the logged-in email')),
+          const SnackBar(
+              content: Text('No user found with the logged-in email')),
         );
         return;
       }
@@ -1539,7 +1734,8 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
 
       if (briganceQuerySnapshot.size == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No form data found for the selected date')),
+          const SnackBar(
+              content: Text('No form data found for the selected date')),
         );
         return;
       }
@@ -1575,10 +1771,10 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
           widget.briganceTableKey.currentState?.addRow(controllerRow);
         });
       });
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error occurred when trying to fetch form data: $e')),
+        SnackBar(
+            content: Text('Error occurred when trying to fetch form data: $e')),
       );
     }
   }
@@ -1601,7 +1797,6 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
       _dropdownHistoryKey.currentState?.reset();
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -1698,7 +1893,8 @@ class _DropdownHistoryState extends State<DropdownHistory> {
         }
       }).catchError((error) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error occurred when fetching form data: $error')),
+          SnackBar(
+              content: Text('Error occurred when fetching form data: $error')),
         );
       });
     } else {
@@ -1738,22 +1934,24 @@ class _DropdownHistoryState extends State<DropdownHistory> {
         _fetchDates();
 
         // Check if the initial name has an exact match
-        final exactMatchIndex = _datesWithStatus.indexWhere((
-            item) => item['name'] == _currentName);
+        final exactMatchIndex =
+        _datesWithStatus.indexWhere((item) => item['name'] == _currentName);
         if (exactMatchIndex != -1) {
           setState(() {
             _selectedDate = _datesWithStatus[exactMatchIndex]['date'];
           });
-          widget.fetchFormData(_datesWithStatus[exactMatchIndex]['date']).then((
-              _) {
+          widget
+              .fetchFormData(_datesWithStatus[exactMatchIndex]['date'])
+              .then((_) {
             final formData = widget.formKey.currentState?.value;
             if (formData != null && formData.containsKey('formStatus')) {
               widget.onStatusChanged(formData['formStatus']);
             }
           }).catchError((error) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(
-                  'Error occurred when fetching form data: $error')),
+              SnackBar(
+                  content:
+                  Text('Error occurred when fetching form data: $error')),
             );
           });
         }
@@ -1815,7 +2013,8 @@ class _DropdownHistoryState extends State<DropdownHistory> {
           ],
         );
       },
-    ) ?? false;
+    ) ??
+        false;
 
     if (confirmDelete) {
       try {
@@ -1893,8 +2092,9 @@ class _DropdownHistoryState extends State<DropdownHistory> {
             }
           }).catchError((error) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(
-                  'Error occurred when fetching form data: $error')),
+              SnackBar(
+                  content:
+                  Text('Error occurred when fetching form data: $error')),
             );
           });
         } else if (value is Map<String, dynamic>) {
@@ -1910,8 +2110,7 @@ class _DropdownHistoryState extends State<DropdownHistory> {
               children: [
                 Expanded(
                   child: Text(
-                    '${DateFormat('yyyy-MM-dd HH:mm').format(
-                        dateWithStatus['date'] as DateTime)} - ${dateWithStatus['status']}',
+                    '${DateFormat('yyyy-MM-dd HH:mm').format(dateWithStatus['date'] as DateTime)} - ${dateWithStatus['status']}',
                     overflow: TextOverflow.clip,
                   ),
                 ),

@@ -11,7 +11,8 @@ class ActivityBoards_Mod extends StatefulWidget {
 }
 
 class _ActivityBoards_ModState extends State<ActivityBoards_Mod> {
-  final GlobalKey<BoardsListWidgetState> _boardsListKey = GlobalKey<BoardsListWidgetState>();
+  final GlobalKey<BoardsListWidgetState> _boardsListKey =
+  GlobalKey<BoardsListWidgetState>();
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +31,7 @@ class _ActivityBoards_ModState extends State<ActivityBoards_Mod> {
                 child: BoardsListWidget(
                   key: _boardsListKey,
                   userID: widget.userID,
+                  showOnlyActivityBoards: true,
                 ),
               ),
             ),

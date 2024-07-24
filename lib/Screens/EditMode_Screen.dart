@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gtext/gtext.dart';
 import '../Widgets/AddBoard_Widget.dart';
-import '../Modules/EditMode/BoardsList_Mod.dart';  
+import '../Modules/EditMode/BoardsList_Mod.dart';
 
 class EditMode extends StatefulWidget {
   final String userID;
@@ -41,6 +41,7 @@ class _EditModeState extends State<EditMode> {
                 child: BoardsListWidget(
                   key: _boardsListKey,
                   userID: widget.userID,
+                  showActivityBoards: false,
                 ),
               ),
             ),

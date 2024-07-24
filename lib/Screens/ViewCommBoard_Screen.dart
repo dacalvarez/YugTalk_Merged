@@ -8,8 +8,14 @@ import '../Modules/CommBoard/MoreOptions_Mod.dart';
 class CommBoard_View extends StatefulWidget {
   final String boardID;
   final String userID;
+  final bool showBackButton;
 
-  const CommBoard_View({Key? key, required this.boardID, required this.userID}) : super(key: key);
+  const CommBoard_View({
+    Key? key,
+    required this.boardID,
+    required this.userID,
+    this.showBackButton = false,
+  }) : super(key: key);
 
   @override
   _CommBoard_ViewState createState() => _CommBoard_ViewState();
@@ -66,7 +72,7 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
       builder: (context) => MoreOptions(
         translate: translate,
         incrementUsageCount: incrementUsageCount,
-        currentLanguage: currentLanguage, 
+        currentLanguage: currentLanguage,
       ),
     ).then((result) {
       if (result != null) {
@@ -87,7 +93,14 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
               ? const CircularProgressIndicator(color: Colors.white)
               : Text(boardName),
           centerTitle: true,
-          leading: IconButton(
+          leading: widget.showBackButton
+              ? IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          )
+              : IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pop();
@@ -95,7 +108,8 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0), // Padding on top and bottom
+              padding: const EdgeInsets.symmetric(
+                  vertical: 8.0), // Padding on top and bottom
               child: ElevatedButton(
                 onPressed: () async {
                   bool? result = await Navigator.of(context).push(
@@ -116,7 +130,8 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: Colors.black, width: 2), // Adding outline
+                    side: const BorderSide(
+                        color: Colors.black, width: 2), // Adding outline
                   ),
                 ),
                 child: GText('Edit'),
@@ -124,7 +139,8 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
             ),
             const SizedBox(width: 4),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0), // Padding on top and bottom
+              padding: const EdgeInsets.symmetric(
+                  vertical: 8.0), // Padding on top and bottom
               child: ElevatedButton(
                 onPressed: _showMoreOptions,
                 style: ElevatedButton.styleFrom(
@@ -132,7 +148,8 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: Colors.black, width: 2), // Adding outline
+                    side: const BorderSide(
+                        color: Colors.black, width: 2), // Adding outline
                   ),
                 ),
                 child: GText('Options'),
@@ -144,11 +161,11 @@ class _CommBoard_ViewState extends State<CommBoard_View> {
         body: isLoading
             ? const Center(child: CircularProgressIndicator())
             : CommBoard_Mod(
-                boardID: widget.boardID, 
-                isEditMode: true,
-                incrementUsageCount: incrementUsageCount,
-                translate: translate,
-              ),
+          boardID: widget.boardID,
+          isEditMode: true,
+          incrementUsageCount: incrementUsageCount,
+          translate: translate,
+        ),
       ),
     );
   }

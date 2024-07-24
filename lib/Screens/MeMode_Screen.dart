@@ -38,6 +38,7 @@ class _MeModeState extends State<MeMode> {
       QuerySnapshot boardSnapshot = await FirebaseFirestore.instance
           .collection('board')
           .where('ownerID', isEqualTo: userID)
+          .where('isActivityBoard', isEqualTo: false)
           .get();
 
       List<QueryDocumentSnapshot> ownedBoards = boardSnapshot.docs;
@@ -50,6 +51,7 @@ class _MeModeState extends State<MeMode> {
           .collection('board')
           .where('ownerID', isEqualTo: userID)
           .where('isMain', isEqualTo: true)
+          .where('isActivityBoard', isEqualTo: false)
           .get();
 
       if (mainBoardSnapshot.docs.isNotEmpty) {
@@ -210,11 +212,11 @@ class _MeModeState extends State<MeMode> {
       ),
       body: mainBoardID != null
           ? CommBoard_Mod(
-              boardID: mainBoardID!,
-              isEditMode: false,
-              incrementUsageCount: incrementUsageCount,
-              translate: translate,
-            )
+        boardID: mainBoardID!,
+        isEditMode: false,
+        incrementUsageCount: incrementUsageCount,
+        translate: translate,
+      )
           : const Center(child: CircularProgressIndicator()),
     );
   }

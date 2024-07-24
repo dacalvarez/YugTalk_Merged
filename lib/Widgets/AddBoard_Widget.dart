@@ -19,27 +19,45 @@ class AddBoardWidget extends StatefulWidget {
 
 class _AddBoardWidgetState extends State<AddBoardWidget> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _customCategoryController = TextEditingController();
+  final TextEditingController _customCategoryController =
+  TextEditingController();
   final TextEditingController _customRowsController = TextEditingController();
-  final TextEditingController _customColumnsController = TextEditingController();
+  final TextEditingController _customColumnsController =
+  TextEditingController();
   String? _selectedDimension;
   String? _selectedLanguage;
   String? _selectedCategory;
   bool _isCustomDimension = false;
 
   static const List<String> _commonDimensions = [
-    '2x2', '3x3', '4x4', '5x5', '6x6', '7x7', '8x8', '8x10', '10x10', '4x6'
+    '2x2',
+    '3x3',
+    '4x4',
+    '5x5',
+    '6x6',
+    '7x7',
+    '8x8',
+    '8x10',
+    '10x10',
+    '4x6'
   ];
 
   static const List<String> _languages = ['Filipino', 'English'];
   final List<String> _categories = [
-    'Basic Needs', 'Cognitive and Language Development', 'Social Interaction', 'Academic Support', 'None', 'Other'
+    'Basic Needs',
+    'Cognitive and Language Development',
+    'Social Interaction',
+    'Academic Support',
+    'None',
+    'Other'
   ];
 
   Future<int> _getNextDocumentID(BuildContext context) async {
     try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('board').get();
-      List<int> ids = querySnapshot.docs.map((doc) => int.parse(doc.id)).toList();
+      QuerySnapshot querySnapshot =
+      await FirebaseFirestore.instance.collection('board').get();
+      List<int> ids =
+      querySnapshot.docs.map((doc) => int.parse(doc.id)).toList();
       return ids.isEmpty ? 1 : ids.reduce((a, b) => a > b ? a : b) + 1;
     } catch (e) {
       print('Error fetching next document ID: $e');
@@ -50,12 +68,14 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
     }
   }
 
-  Future<void> _addBoard(BuildContext parentContext, String name, String category, int rows, int columns, String language) async {
+  Future<void> _addBoard(BuildContext parentContext, String name,
+      String category, int rows, int columns, String language) async {
     try {
       int newID = await _getNextDocumentID(parentContext);
       if (newID == -1) return;
 
-      DocumentReference boardRef = FirebaseFirestore.instance.collection('board').doc(newID.toString());
+      DocumentReference boardRef =
+      FirebaseFirestore.instance.collection('board').doc(newID.toString());
 
       DateTime now = DateTime.now();
       DateTime dateOnly = DateTime(now.year, now.month, now.day);
@@ -68,11 +88,15 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
         'rows': rows,
         'columns': columns,
         'language': language,
-        'connectedForm': '',
+        'connectedForm': name,
         'dateCreated': Timestamp.fromDate(dateOnly),
+        'isActivityBoard': true,
       });
 
-      await boardRef.collection('words').doc('placeholder').set({'initialized': true});
+      await boardRef
+          .collection('words')
+          .doc('placeholder')
+          .set({'initialized': true});
 
       widget.onBoardAdded();
     } catch (e) {
@@ -83,7 +107,8 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
     }
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, {bool enabled = true, bool isRequired = true}) {
+  Widget _buildTextField(TextEditingController controller, String label,
+      {bool enabled = true, bool isRequired = true}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -97,15 +122,21 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
           ),
           filled: true,
           fillColor: isDarkMode ? Colors.grey[1000] : Colors.grey[200],
-          suffixIcon: isRequired ? const Icon(Icons.star, color: Colors.red, size: 10) : null,
+          suffixIcon: isRequired
+              ? const Icon(Icons.star, color: Colors.red, size: 10)
+              : null,
         ),
         enabled: enabled,
-        validator: isRequired ? (value) => value!.isEmpty ? 'This field is required' : null : null,
+        validator: isRequired
+            ? (value) => value!.isEmpty ? 'This field is required' : null
+            : null,
       ),
     );
   }
 
-  Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {bool isRequired = true}) {
+  Widget _buildDropdown(String label, String? value, List<String> items,
+      Function(String?) onChanged,
+      {bool isRequired = true}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -118,7 +149,9 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
           ),
           filled: true,
           fillColor: isDarkMode ? Colors.grey[1000] : Colors.grey[200],
-          suffixIcon: isRequired ? const Icon(Icons.star, color: Colors.red, size: 10) : null,
+          suffixIcon: isRequired
+              ? const Icon(Icons.star, color: Colors.red, size: 10)
+              : null,
         ),
         value: value,
         isExpanded: true,
@@ -129,7 +162,9 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
             child: Text(value),
           );
         }).toList(),
-        validator: isRequired ? (value) => value == null ? 'This field is required' : null : null,
+        validator: isRequired
+            ? (value) => value == null ? 'This field is required' : null
+            : null,
       ),
     );
   }
@@ -173,19 +208,20 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
                           'Category',
                           _selectedCategory,
                           _categories,
-                          (String? newValue) {
+                              (String? newValue) {
                             setState(() {
                               _selectedCategory = newValue;
                             });
                           },
                         ),
                         if (_selectedCategory == 'Other')
-                          _buildTextField(_customCategoryController, 'Enter Custom Category'),
+                          _buildTextField(_customCategoryController,
+                              'Enter Custom Category'),
                         _buildDropdown(
                           'Language',
                           _selectedLanguage,
                           _languages,
-                          (String? newValue) {
+                              (String? newValue) {
                             setState(() {
                               _selectedLanguage = newValue;
                             });
@@ -195,12 +231,15 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
                           'Board Dimensions',
                           _selectedDimension,
                           [..._commonDimensions, 'Custom'],
-                          (String? newValue) {
+                              (String? newValue) {
                             setState(() {
                               _selectedDimension = newValue;
-                              _isCustomDimension = _selectedDimension == 'Custom';
-                              if (!_isCustomDimension && _selectedDimension != null) {
-                                List<String> dims = _selectedDimension!.split('x');
+                              _isCustomDimension =
+                                  _selectedDimension == 'Custom';
+                              if (!_isCustomDimension &&
+                                  _selectedDimension != null) {
+                                List<String> dims =
+                                _selectedDimension!.split('x');
                                 _customRowsController.text = dims[0];
                                 _customColumnsController.text = dims[1];
                               } else {
@@ -213,9 +252,15 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
                         if (_isCustomDimension)
                           Row(
                             children: [
-                              Expanded(child: _buildTextField(_customRowsController, 'Rows', enabled: _isCustomDimension)),
+                              Expanded(
+                                  child: _buildTextField(
+                                      _customRowsController, 'Rows',
+                                      enabled: _isCustomDimension)),
                               const SizedBox(width: 10),
-                              Expanded(child: _buildTextField(_customColumnsController, 'Columns', enabled: _isCustomDimension)),
+                              Expanded(
+                                  child: _buildTextField(
+                                      _customColumnsController, 'Columns',
+                                      enabled: _isCustomDimension)),
                             ],
                           ),
                       ],
@@ -237,7 +282,8 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
                       int rows, columns;
                       if (_isCustomDimension) {
                         rows = int.tryParse(_customRowsController.text) ?? 4;
-                        columns = int.tryParse(_customColumnsController.text) ?? 4;
+                        columns =
+                            int.tryParse(_customColumnsController.text) ?? 4;
                       } else if (_selectedDimension != null) {
                         List<String> dims = _selectedDimension!.split('x');
                         rows = int.parse(dims[0]);
@@ -246,9 +292,12 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
                         rows = 4;
                         columns = 4;
                       }
-                      String category = _selectedCategory == 'Other' ? _customCategoryController.text : _selectedCategory!;
+                      String category = _selectedCategory == 'Other'
+                          ? _customCategoryController.text
+                          : _selectedCategory!;
                       Navigator.of(context).pop();
-                      _addBoard(parentContext, _nameController.text, category, rows, columns, _selectedLanguage!);
+                      _addBoard(parentContext, _nameController.text, category,
+                          rows, columns, _selectedLanguage!);
                     }
                   },
                 ),

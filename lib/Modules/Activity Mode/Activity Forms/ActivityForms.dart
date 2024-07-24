@@ -9,11 +9,12 @@ class ActivityForms {
   final DateTime dateCreated;
   DateTime dateModified;
   bool isFavorite;
-  List<String> activityBoards;
+  final List<String> activityBoards;
   final String gender;
   final String therapist;
   final DateTime? date;
   final String name;
+  final bool isActivityBoard;
 
   // Fields for PLS-5 form
   final String pls5AuditoryComprehensionStandardScore;
@@ -48,6 +49,7 @@ class ActivityForms {
     this.gender = '',
     this.name = '',
     this.therapist = '',
+    this.isActivityBoard = false,
     required this.date,
     this.pls5AuditoryComprehensionStandardScore = '',
     this.pls5AuditoryComprehensionPercentileRank = '',
@@ -68,7 +70,7 @@ class ActivityForms {
     this.nextSteps = '',
   });
 
-    factory ActivityForms.fromMap(Map<String, dynamic> map) {
+  factory ActivityForms.fromMap(Map<String, dynamic> map) {
     final activityBoards = map['activity_board_dropdown'];
     final activityBoardsList = activityBoards is String
         ? [activityBoards]
@@ -77,7 +79,10 @@ class ActivityForms {
     List<Map<String, String>> convertToListOfMaps(List<dynamic> list) {
       return list.map((item) {
         if (item is Map<dynamic, dynamic>) {
-          return item.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')).cast<String, String>();
+          return item
+              .map((key, value) =>
+              MapEntry(key.toString(), value?.toString() ?? ''))
+              .cast<String, String>();
         } else {
           return <String, String>{};
         }
@@ -92,8 +97,10 @@ class ActivityForms {
       formStatus: map['formStatus'] as String? ?? '',
       name: map['name'] as String? ?? '',
       age: map['age'] as int? ?? 0,
-      dateCreated: (map['dateCreated'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      dateModified: (map['dateModified'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      dateCreated:
+      (map['dateCreated'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      dateModified:
+      (map['dateModified'] as Timestamp?)?.toDate() ?? DateTime.now(),
       activityBoards: activityBoardsList,
       gender: map['gender'] as String? ?? '',
       therapist: map['therapist'] as String? ?? '',
@@ -104,9 +111,12 @@ class ActivityForms {
           ? dateFormat.parse(map['date'])
           : null
           : null,
-      pls5TotalLanguageScoreSummary: map['total_language_score_summary'] as String? ?? '',
-      pls5AuditoryComprehensionSummary: map['auditory_comprehension_summary'] as String? ?? '',
-      pls5ExpressiveCommunicationSummary: map['expressive_communication_summary'] as String? ?? '',
+      pls5TotalLanguageScoreSummary:
+      map['total_language_score_summary'] as String? ?? '',
+      pls5AuditoryComprehensionSummary:
+      map['auditory_comprehension_summary'] as String? ?? '',
+      pls5ExpressiveCommunicationSummary:
+      map['expressive_communication_summary'] as String? ?? '',
       pls5OtherComments: map['other_comments'] as String? ?? '',
       briganceRows: convertToListOfMaps(map['briganceRows'] ?? []),
       pls5Rows: convertToListOfMaps(map['pls5Rows'] ?? []),
@@ -140,8 +150,10 @@ List<ActivityForms> activityFormsData = [
     pls5TotalLanguageScorePercentileRank: '88',
     pls5TotalLanguageScoreDescriptiveRange: 'Above Average',
     pls5TotalLanguageScoreSummary: 'Overall excellent',
-    pls5AuditoryComprehensionSummary: 'John demonstrated auditory comprehension by pointing to letters, identifying colors, understanding negatives in sentences, recognizing action in pictures, following commands without gestural cues, engaging in symbolic play, engaging in pretend play, understanding verbs in context, and identifying things you wear. He did not demonstrate ordering pictures by qualitative concept, understanding of modified nouns, emergent literacy skills, understanding of complex sentences, understanding of quantitative concepts, identifying advanced body parts, identifying shapes, understanding pronouns, understanding spatial concepts, understanding sentences with post-noun elaboration, understanding analogies, making inferences, or understanding use of objects. John\'s standard score of 100 indicates that his receptive language skills are within the average range as compared to same-age peers.',
-    pls5ExpressiveCommunicationSummary: 'John demonstrated expressive communication skills by using plurals, producing multi-word sentences, using a variety of words in spontaneous speech, and naming a variety of pictured objects. He did not demonstrate answering questions about hypothetical events, telling how an object is used, using possessives, answering questions logically, naming described objects, answering what and where questions, or using present progressive. John\'s standard score of 95 indicates that his expressive language skills are within the average range as compared to same-age peers.',
+    pls5AuditoryComprehensionSummary:
+    'John demonstrated auditory comprehension by pointing to letters, identifying colors, understanding negatives in sentences, recognizing action in pictures, following commands without gestural cues, engaging in symbolic play, engaging in pretend play, understanding verbs in context, and identifying things you wear. He did not demonstrate ordering pictures by qualitative concept, understanding of modified nouns, emergent literacy skills, understanding of complex sentences, understanding of quantitative concepts, identifying advanced body parts, identifying shapes, understanding pronouns, understanding spatial concepts, understanding sentences with post-noun elaboration, understanding analogies, making inferences, or understanding use of objects. John\'s standard score of 100 indicates that his receptive language skills are within the average range as compared to same-age peers.',
+    pls5ExpressiveCommunicationSummary:
+    'John demonstrated expressive communication skills by using plurals, producing multi-word sentences, using a variety of words in spontaneous speech, and naming a variety of pictured objects. He did not demonstrate answering questions about hypothetical events, telling how an object is used, using possessives, answering questions logically, naming described objects, answering what and where questions, or using present progressive. John\'s standard score of 95 indicates that his expressive language skills are within the average range as compared to same-age peers.',
     pls5OtherComments: 'None',
     pls5Rows: [
       {
@@ -180,14 +192,16 @@ List<ActivityForms> activityFormsData = [
     briganceRows: [
       {
         'Domain': 'Academic/Cognitive',
-        'Order': '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
+        'Order':
+        '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2.5',
         'Subtotal Score': '_ / 10',
       },
       {
         'Domain': 'Language Development',
-        'Order': '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
+        'Order':
+        '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2',
         'Subtotal Score': '_ / 10',
@@ -219,14 +233,16 @@ List<ActivityForms> activityFormsData = [
     briganceRows: [
       {
         'Domain': 'Academic/Cognitive',
-        'Order': '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
+        'Order':
+        '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2.5',
         'Subtotal Score': '_ / 10',
       },
       {
         'Domain': 'Language Development',
-        'Order': '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
+        'Order':
+        '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2',
         'Subtotal Score': '_ / 10',
@@ -258,14 +274,16 @@ List<ActivityForms> activityFormsData = [
     briganceRows: [
       {
         'Domain': 'Academic/Cognitive',
-        'Order': '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
+        'Order':
+        '1A Knows Personal Information. Knows: 1. First name 2. Last name 3. Age',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2.5',
         'Subtotal Score': '_ / 10',
       },
       {
         'Domain': 'Language Development',
-        'Order': '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
+        'Order':
+        '2A Identifies Colors. Points to: 1. red 2. blue 3. green 4. yellow 5. orange',
         'Duration': 'Stop after 3 incorrect responses in a row',
         'No. Correct * Value': '___ x 2',
         'Subtotal Score': '_ / 10',
