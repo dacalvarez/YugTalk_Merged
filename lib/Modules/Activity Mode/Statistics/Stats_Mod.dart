@@ -30,11 +30,7 @@ class Stats_Mod extends StatelessWidget {
           children: [
             GeneralStats(wordUsages: wordUsages, activityForms: activityForms),
             const SizedBox(height: 15),
-            MostUsedWordsStats(
-              mostUsedCount: mostUsedCount,
-              leastUsedCount: leastUsedCount,
-              wordUsages: wordUsages,
-            ),
+            MostUsedWordsStats(),
             const SizedBox(height: 25),
             ActivitiesStats(activityForms: activityForms),
             const SizedBox(height: 25),
@@ -53,44 +49,98 @@ class LocationFrequency {
 }
 
 class MostUsedWordsStats extends StatefulWidget {
-  final int mostUsedCount;
-  final int leastUsedCount;
-  final List<WordUsage> wordUsages;
-
-  const MostUsedWordsStats({
-    super.key,
-    required this.mostUsedCount,
-    required this.leastUsedCount,
-    required this.wordUsages,
-  });
+  const MostUsedWordsStats({Key? key}) : super(key: key);
 
   @override
   _MostUsedWordsStatsState createState() => _MostUsedWordsStatsState();
 }
 
-class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
-    with AutomaticKeepAliveClientMixin {
-  late List<WordUsage> _filteredMostUsedWords;
-  late List<WordUsage> _filteredLeastUsedWords;
-  bool _sortAscending = true;
-  int _sortColumnIndex = 0;
+class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
+  List<Map<String, dynamic>> _mostUsedWords = [];
+  List<Map<String, dynamic>> _leastUsedWords = [];
+  int _mostUsedWordsCount = 0;
+  int _leastUsedWordsCount = 0;
+  bool _isLoading = true;
   String _selectedCategory = 'All Categories';
   String _selectedLocation = 'All Locations';
+  int _sortColumnIndex = 0;
+  bool _sortAscending = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredMostUsedWords = _filterMostUsedWords();
-    _filteredLeastUsedWords = _filterLeastUsedWords();
+    _fetchWordUsageData();
+  }
+
+  Future<void> _fetchWordUsageData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+
+    QuerySnapshot boardSnapshot = await FirebaseFirestore.instance
+        .collection('board')
+        .where('ownerID', isEqualTo: user.email)
+        .where('isActivityBoard', isEqualTo: false)
+        .get();
+
+    Map<String, Map<String, dynamic>> wordMap = {};
+
+    for (var boardDoc in boardSnapshot.docs) {
+      String boardId = boardDoc.id;
+      String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+
+      QuerySnapshot wordsSnapshot = await FirebaseFirestore.instance
+          .collection('board')
+          .doc(boardId)
+          .collection('words')
+          .get();
+
+      for (var wordDoc in wordsSnapshot.docs) {
+        Map<String, dynamic> wordData = wordDoc.data() as Map<String, dynamic>;
+
+        // Skip placeholder words
+        if (wordDoc.id == 'placeholder' || wordData['initialized'] == true) {
+          continue;
+        }
+
+        String wordName = wordData['wordName'] as String? ?? 'Unnamed Word';
+        String wordCategory =
+            wordData['wordCategory'] as String? ?? 'Uncategorized';
+        int usageCount = wordData['usageCount'] as int? ?? 0;
+
+        if (!wordMap.containsKey(wordName)) {
+          wordMap[wordName] = {
+            'wordName': wordName,
+            'wordCategory': wordCategory,
+            'boardFrequencies': {},
+            'totalUsage': 0,
+          };
+        }
+
+        wordMap[wordName]!['boardFrequencies'][boardName] = usageCount;
+        wordMap[wordName]!['totalUsage'] =
+            (wordMap[wordName]!['totalUsage'] as int) + usageCount;
+      }
+    }
+
+    List<Map<String, dynamic>> allWords = wordMap.values.toList();
+    allWords.sort((a, b) => b['totalUsage'].compareTo(a['totalUsage']));
+
+    if (mounted) {
+      setState(() {
+        _mostUsedWords = allWords
+            .where((word) => (word['totalUsage'] as int? ?? 0) >= 10)
+            .toList();
+        _leastUsedWords = allWords
+            .where((word) => (word['totalUsage'] as int? ?? 0) < 10)
+            .toList();
+        _mostUsedWordsCount = _mostUsedWords.length;
+        _leastUsedWordsCount = _leastUsedWords.length;
+      });
+    }
   }
 
   @override
-  bool get wantKeepAlive => true;
-
-  @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color textColor = isDarkMode ? Colors.white : Colors.black;
     return SizedBox(
@@ -103,34 +153,37 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
               color: Colors.blue.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20.0),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildInfoIconButton(
-                  count: widget.mostUsedCount.toString(),
-                  onPressed: () {
-                    _showWordsDialog(context, _filteredMostUsedWords);
-                  },
-                  title: 'Most Used Words',
-                  textColor: textColor,
-                ),
-                _buildInfoIconButton(
-                  count: widget.leastUsedCount.toString(),
-                  onPressed: () {
-                    _showWordsDialog(context, _filteredLeastUsedWords);
-                  },
-                  title: 'Least Used Words',
-                  textColor: textColor,
-                ),
-              ],
-            ),
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildInfoIconButton(
+                        count: _mostUsedWords.length.toString(),
+                        onPressed: () {
+                          _showWordsDialog(context, _mostUsedWords);
+                        },
+                        title: 'Most Used Words',
+                        textColor: textColor,
+                      ),
+                      _buildInfoIconButton(
+                        count: _leastUsedWords.length.toString(),
+                        onPressed: () {
+                          _showWordsDialog(context, _leastUsedWords);
+                        },
+                        title: 'Least Used Words',
+                        textColor: textColor,
+                      ),
+                    ],
+                  ),
           ),
           const Positioned(
             top: 0,
             right: 0,
             child: IconButton(
                 icon: Icon(Icons.bar_chart),
-                onPressed: null /*() {
+                onPressed:
+                    null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -140,7 +193,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                   ),
                 );
               },*/
-            ),
+                ),
           ),
         ],
       ),
@@ -188,9 +241,11 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
     );
   }
 
-  void _showWordsDialog(BuildContext context, List<WordUsage> words) {
-    List<WordUsage> filteredWords = List.from(words);
-    List<String> searchQueries = [];
+  void _showWordsDialog(
+      BuildContext context, List<Map<String, dynamic>> words) {
+    List<Map<String, dynamic>> filteredWords = List.from(words);
+    String _popupSearchQuery = '';
+    String _selectedCategory = 'All Categories';
 
     showDialog(
       context: context,
@@ -208,273 +263,88 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
                       ),
                       onChanged: (query) {
                         setState(() {
-                          searchQueries = query.toLowerCase().split(' ');
-                          filteredWords = words.where((word) {
-                            return searchQueries.every((searchQuery) =>
-                                word.word.toLowerCase().contains(searchQuery));
-                          }).toList();
+                          _popupSearchQuery = query.toLowerCase();
+                          _filterWords(filteredWords, _popupSearchQuery,
+                              _selectedCategory);
                         });
                       },
                     ),
                   ),
-                  const SizedBox(
-                    width: 20,
-                  ),
+                  const SizedBox(width: 20),
                   DropdownButton<String>(
                     value: _selectedCategory,
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedCategory = newValue!;
-                        if (_selectedCategory != 'All Categories') {
-                          filteredWords = words
-                              .where((word) =>
-                          word.category.toLowerCase() ==
-                              _selectedCategory.toLowerCase())
-                              .toList();
-                        } else {
-                          filteredWords = List.from(words);
-                        }
+                        _filterWords(filteredWords, _popupSearchQuery,
+                            _selectedCategory);
                       });
                     },
                     items: _buildCategoryDropdownItems(words),
-                  ),
-                  DropdownButton<String>(
-                    value: _selectedLocation,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedLocation = newValue!;
-                        if (_selectedLocation != 'All Locations') {
-                          filteredWords = words.where((word) {
-                            return word.datesOfUsage.any((usage) => usage.values
-                                .any((lfList) => lfList.any((lf) =>
-                            lf.location
-                                .toString()
-                                .split('.')
-                                .last
-                                .toLowerCase() ==
-                                _selectedLocation.toLowerCase())));
-                          }).toList();
-                        } else {
-                          filteredWords = List.from(words);
-                        }
-                      });
-                    },
-                    items: _buildLocationDropdownItems(words),
                   ),
                 ],
               ),
               content: SizedBox(
                 width: double.maxFinite,
                 height: 400,
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: ConstrainedBox(
-                        constraints:
-                        BoxConstraints(minWidth: constraints.maxWidth),
-                        child: DataTable(
-                          columnSpacing: 16.0,
-                          headingRowHeight: 56.0,
-                          dataRowMaxHeight: 56,
-                          dividerThickness: 2,
-                          columns: [
-                            DataColumn(
-                              label: buildSortableHeader(
-                                'Word',
-                                0,
-                                    () {
-                                  setState(() {
-                                    _sortAscending = !_sortAscending;
-                                    _sortColumnIndex = 0;
-                                    filteredWords.sort((a, b) {
-                                      if (_sortAscending) {
-                                        return a.word.compareTo(b.word);
-                                      } else {
-                                        return b.word.compareTo(a.word);
-                                      }
-                                    });
-                                  });
-                                },
-                              ),
-                            ),
-                            DataColumn(
-                              label: buildSortableHeader(
-                                'Category',
-                                1,
-                                    () {
-                                  setState(() {
-                                    _sortAscending = !_sortAscending;
-                                    _sortColumnIndex = 1;
-                                    filteredWords.sort((a, b) {
-                                      if (_sortAscending) {
-                                        return a.category.compareTo(b.category);
-                                      } else {
-                                        return b.category.compareTo(a.category);
-                                      }
-                                    });
-                                  });
-                                },
-                              ),
-                            ),
-                            DataColumn(
-                              label: buildSortableHeader(
-                                'Frequency',
-                                2,
-                                    () {
-                                  setState(() {
-                                    _sortAscending = !_sortAscending;
-                                    _sortColumnIndex = 2;
-                                    filteredWords.sort((a, b) {
-                                      if (_sortAscending) {
-                                        return a.dailyFrequency
-                                            .compareTo(b.dailyFrequency);
-                                      } else {
-                                        return b.dailyFrequency
-                                            .compareTo(a.dailyFrequency);
-                                      }
-                                    });
-                                  });
-                                },
-                              ),
-                            ),
-                            DataColumn(
-                              label: buildSortableHeader(
-                                'Date Range',
-                                3,
-                                    () {
-                                  setState(() {
-                                    _sortAscending = !_sortAscending;
-                                    _sortColumnIndex = 3;
-                                    filteredWords.sort((a, b) {
-                                      DateTime firstDateA =
-                                          a.datesOfUsage.first.keys.first;
-                                      DateTime firstDateB =
-                                          b.datesOfUsage.first.keys.first;
-                                      DateTime lastDateB =
-                                          b.datesOfUsage.last.keys.first;
-                                      if (_sortAscending) {
-                                        return firstDateA.compareTo(firstDateB);
-                                      } else {
-                                        return lastDateB.compareTo(firstDateA);
-                                      }
-                                    });
-                                  });
-                                },
-                              ),
-                            ),
-                            const DataColumn(
-                              label: GText('Locations'),
-                            ),
-                          ],
-                          rows: filteredWords
-                              .map(
-                                (word) => DataRow(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: DataTable(
+                    columns: [
+                      DataColumn(label: Text('Word')),
+                      DataColumn(label: Text('Category')),
+                      DataColumn(label: Text('Boards & Frequencies')),
+                      DataColumn(label: Text('Total Usage')),
+                    ],
+                    rows: filteredWords
+                        .map((word) => DataRow(
                               cells: [
-                                DataCell(
-                                  GText(word.word),
-                                ),
-                                DataCell(
-                                  GText(word.category),
-                                ),
-                                DataCell(
-                                  GText(word.dailyFrequency.toString()),
-                                ),
-                                DataCell(
-                                  GText(
-                                    '${word.datesOfUsage.first.keys.first.toString().split(' ')[0]} - ${word.datesOfUsage.last.keys.first.toString().split(' ')[0]}',
-                                  ),
-                                ),
-                                DataCell(
-                                  Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: _selectedLocation ==
-                                        'All Locations'
-                                        ? _aggregateLocationFrequencies(
-                                        word, _selectedLocation)
-                                        .map((locationFrequency) =>
-                                        GText(
-                                          '${locationFrequency.location}: ${locationFrequency.frequency}',
-                                        ))
-                                        .toList()
-                                        : _aggregateLocationFrequencies(
-                                        word, _selectedLocation)
-                                        .map((locationFrequency) {
-                                      if (locationFrequency.location
-                                          .toLowerCase() ==
-                                          _selectedLocation
-                                              .toLowerCase()) {
-                                        return GText(
-                                          '${locationFrequency.location}: ${locationFrequency.frequency}',
-                                        );
-                                      } else {
-                                        return const SizedBox();
-                                      }
-                                    }).toList(),
-                                  ),
-                                ),
+                                DataCell(Text(word['wordName'] as String)),
+                                DataCell(Text(word['wordCategory'] as String)),
+                                DataCell(Text(_formatBoardFrequencies(
+                                    word['boardFrequencies']
+                                        as Map<String, dynamic>))),
+                                DataCell(Text(word['totalUsage'].toString())),
                               ],
-                            ),
-                          )
-                              .toList(),
-                        ),
-                      ),
-                    );
-                  },
+                            ))
+                        .toList(),
+                  ),
                 ),
               ),
             );
           },
         );
       },
-    ).then((value) {
-      setState(() {
-        _selectedCategory = 'All Categories';
-        _selectedLocation = 'All Locations';
-      });
-    });
+    );
   }
 
-  List<LocationFrequency> _aggregateLocationFrequencies(
-      WordUsage word, String selectedLocation) {
-    Map<String, int> locationFrequencies = {};
+  void _filterWords(
+      List<Map<String, dynamic>> words, String query, String category) {
+    words = _mostUsedWords.where((word) {
+      bool matchesSearch =
+          word['wordName'].toString().toLowerCase().contains(query);
+      bool matchesCategory =
+          category == 'All Categories' || word['wordCategory'] == category;
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
 
-    for (var usage in word.datesOfUsage) {
-      for (var lfList in usage.values) {
-        for (var lf in lfList) {
-          String location = lf.location.toString().split('.').last;
-          int frequency = lf.frequency;
-          if (selectedLocation == 'All Locations' ||
-              location == selectedLocation) {
-            locationFrequencies[location] =
-                (locationFrequencies[location] ?? 0) + frequency;
-          }
-        }
-      }
-    }
-
-    List<LocationFrequency> result = [];
-    locationFrequencies.forEach((location, frequency) {
-      result.add(LocationFrequency(location: location, frequency: frequency));
-    });
-    return result;
+  String _formatBoardFrequencies(Map<String, dynamic> boardFrequencies) {
+    return boardFrequencies.entries
+        .map((e) => "${e.key}: ${e.value}")
+        .join(", ");
   }
 
   List<DropdownMenuItem<String>> _buildCategoryDropdownItems(
-      List<WordUsage> words) {
-    Set<String> categories = words.map((word) => word.category).toSet();
-    List<DropdownMenuItem<String>> items = [];
-    items.add(const DropdownMenuItem(
-      value: 'All Categories',
-      child: GText('All Categories'),
-    ));
-    items.addAll(categories.map((category) {
-      return DropdownMenuItem(
-        value: category,
-        child: GText(category),
-      );
-    }).toList());
+      List<Map<String, dynamic>> words) {
+    Set<String> categories =
+        words.map((word) => word['wordCategory'] as String).toSet();
+    List<DropdownMenuItem<String>> items = [
+      const DropdownMenuItem(
+          value: 'All Categories', child: Text('All Categories')),
+    ];
+    items.addAll(categories.map((category) =>
+        DropdownMenuItem(value: category, child: Text(category))));
     return items;
   }
 
@@ -483,9 +353,9 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
     Set<String> locations = words
         .expand(
             (word) => word.datesOfUsage.expand((usage) => usage.values.expand(
-              (locationFrequencies) => locationFrequencies
-              .map((lf) => lf.location.toString().split('.').last),
-        )))
+                  (locationFrequencies) => locationFrequencies
+                      .map((lf) => lf.location.toString().split('.').last),
+                )))
         .toSet();
     List<DropdownMenuItem<String>> items = [];
     items.add(const DropdownMenuItem(
@@ -521,16 +391,12 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats>
     );
   }
 
-  List<WordUsage> _filterMostUsedWords() {
-    return widget.wordUsages
-        .where((wordUsage) => wordUsage.isMostUsed)
-        .toList();
+  List<Map<String, dynamic>> _filterMostUsedWords() {
+    return _mostUsedWords;
   }
 
-  List<WordUsage> _filterLeastUsedWords() {
-    return widget.wordUsages
-        .where((wordUsage) => wordUsage.isLeastUsed)
-        .toList();
+  List<Map<String, dynamic>> _filterLeastUsedWords() {
+    return _leastUsedWords;
   }
 }
 
@@ -681,7 +547,8 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
             right: 0,
             child: IconButton(
                 icon: Icon(Icons.bar_chart),
-                onPressed: null /*() {
+                onPressed:
+                    null /*() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -691,7 +558,7 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                   ),
                 );
               },*/
-            ),
+                ),
           ),
         ],
       ),
@@ -779,11 +646,11 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                       List<Map<String, dynamic>> forms = snapshot.data!;
                       List<Map<String, dynamic>> filteredForms = forms
                           .where((form) => form['activityFormName']
-                          .toLowerCase()
-                          .contains(_popupSearchQuery.toLowerCase()))
+                              .toLowerCase()
+                              .contains(_popupSearchQuery.toLowerCase()))
                           .toList();
                       final DateFormat dateFormat =
-                      DateFormat('yyyy-MM-dd HH:mm');
+                          DateFormat('yyyy-MM-dd HH:mm');
 
                       return SingleChildScrollView(
                         scrollDirection: Axis.vertical,
@@ -807,8 +674,8 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
                               ),
                               subtitle: GText(
                                 'Type: ${form['formType']}\n'
-                                    'Name: ${form['name']}\n'
-                                    'Date Created: ${date != null ? dateFormat.format(date) : 'N/A'}\n',
+                                'Name: ${form['name']}\n'
+                                'Date Created: ${date != null ? dateFormat.format(date) : 'N/A'}\n',
                               ),
                               onTap: () {
                                 Navigator.of(context).pop();
@@ -920,10 +787,10 @@ class _ActivitiesStatsState extends State<ActivitiesStats> {
           'activity_board_dropdown': activityBoards,
           'age': int.tryParse(data['age'] ?? '0') ?? 0,
           'auditory_comprehension_summary':
-          data['auditory_comprehension_summary'],
+              data['auditory_comprehension_summary'],
           'date': dateFormat.format(date),
           'expressive_communication_summary':
-          data['expressive_communication_summary'],
+              data['expressive_communication_summary'],
           'formStatus': data['formStatus'] ?? '',
           'gender': data['gender'] ?? '',
           'name': name,
@@ -1014,9 +881,8 @@ class _GeneralStatsState extends State<GeneralStats> {
     });
 
     // Fetch location count
-    final userSettingsRef = FirebaseFirestore.instance
-        .collection('userSettings')
-        .doc(user.email);
+    final userSettingsRef =
+        FirebaseFirestore.instance.collection('userSettings').doc(user.email);
     _userSettingsSubscription = userSettingsRef.snapshots().listen((snapshot) {
       if (snapshot.exists) {
         _updateLocationCount(snapshot.data());
@@ -1027,7 +893,8 @@ class _GeneralStatsState extends State<GeneralStats> {
     _fetchActivityCount(user.email!);
   }
 
-  void _updateBoardCount(List<QueryDocumentSnapshot> boardDocs, String userEmail) {
+  void _updateBoardCount(
+      List<QueryDocumentSnapshot> boardDocs, String userEmail) {
     int boardCount = 0;
 
     _wordSubscriptions.values.forEach((subscription) => subscription.cancel());
@@ -1041,7 +908,10 @@ class _GeneralStatsState extends State<GeneralStats> {
           if (boardData != null && boardData['ownerID'] == userEmail) {
             boardCount++;
 
-            final wordsSubscription = docSnapshot.reference.collection('words').snapshots().listen((wordsSnapshot) {
+            final wordsSubscription = docSnapshot.reference
+                .collection('words')
+                .snapshots()
+                .listen((wordsSnapshot) {
               _updateBoardWords(docSnapshot.id, wordsSnapshot.docs);
             });
 
@@ -1109,8 +979,11 @@ class _GeneralStatsState extends State<GeneralStats> {
             .doc(userId)
             .collection('BriganceForm');
 
-        _pls5Subscription = pls5FormRef.snapshots().listen((_) => _updateActivityCount(userId));
-        _briganceSubscription = briganceFormRef.snapshots().listen((_) => _updateActivityCount(userId));
+        _pls5Subscription =
+            pls5FormRef.snapshots().listen((_) => _updateActivityCount(userId));
+        _briganceSubscription = briganceFormRef
+            .snapshots()
+            .listen((_) => _updateActivityCount(userId));
       }
     });
   }
@@ -1130,11 +1003,16 @@ class _GeneralStatsState extends State<GeneralStats> {
         .count()
         .get();
 
-    int totalActivityCount = (pls5Count.count ?? 0) + (briganceCount.count ?? 0);
+    int totalActivityCount =
+        (pls5Count.count ?? 0) + (briganceCount.count ?? 0);
     _updateCounts(activityCount: totalActivityCount);
   }
 
-  void _updateCounts({int? boardCount, int? wordCount, int? locationCount, int? activityCount}) {
+  void _updateCounts(
+      {int? boardCount,
+      int? wordCount,
+      int? locationCount,
+      int? activityCount}) {
     _safeSetState(() {
       if (boardCount != null) _boardCount = boardCount;
       if (wordCount != null) _wordCount = wordCount;
@@ -1166,14 +1044,14 @@ class _GeneralStatsState extends State<GeneralStats> {
           mainAxisSpacing: 8.0,
           crossAxisSpacing: 8.0,
           children: [
-            _buildGeneralStatContainer(context, 'Words',
-                _wordCount.toString(), textColor),
-            _buildGeneralStatContainer(context, 'Boards',
-                _boardCount.toString(), textColor),
-            _buildGeneralStatContainer(context, 'Locations',
-                _locationCount.toString(), textColor),
-            _buildGeneralStatContainer(context, 'Activities',
-                _activityCount.toString(), textColor),
+            _buildGeneralStatContainer(
+                context, 'Words', _wordCount.toString(), textColor),
+            _buildGeneralStatContainer(
+                context, 'Boards', _boardCount.toString(), textColor),
+            _buildGeneralStatContainer(
+                context, 'Locations', _locationCount.toString(), textColor),
+            _buildGeneralStatContainer(
+                context, 'Activities', _activityCount.toString(), textColor),
           ],
         ),
       ),
@@ -1249,7 +1127,6 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     _loadItems();
   }
 
-
   String _decryptData(String encryptedData) {
     List<int> bytes = base64Url.decode(encryptedData);
     return utf8.decode(bytes);
@@ -1272,11 +1149,14 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     if (widget.title == 'Words') {
       List<Map<String, dynamic>> wordData = await _fetchWordUsages();
       setState(() {
-        allItems = wordData.map((word) => {
-          'address': word['wordName'] as String,
-          'count': word['count'].toString(),
-          'category': word['wordCategory'] as String,
-        }).toList().cast<Map<String, String>>();
+        allItems = wordData
+            .map((word) => {
+                  'address': word['wordName'] as String,
+                  'count': word['count'].toString(),
+                  'category': word['wordCategory'] as String,
+                })
+            .toList()
+            .cast<Map<String, String>>();
         filteredItems = allItems;
       });
     } else if (widget.title == 'Boards') {
@@ -1295,7 +1175,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
               .doc(user.email)
               .get();
 
-          final userLocations = userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
+          final userLocations =
+              userSettingsDoc.data()?['userLocations'] as Map<String, dynamic>?;
 
           if (userLocations != null) {
             // Fetch currentLocation data
@@ -1309,7 +1190,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
             List<Map<String, dynamic>> locationData = [];
 
             userLocations.forEach((locationType, encodedLocations) {
-              String decodedValue = utf8.decode(base64.decode(encodedLocations));
+              String decodedValue =
+                  utf8.decode(base64.decode(encodedLocations));
               List<dynamic> decodedJson = jsonDecode(decodedValue);
 
               for (var location in decodedJson) {
@@ -1328,7 +1210,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
                   'type': locationType,
                   'address': address,
                   'counter': locationStats['counter'] ?? 0,
-                  'startTime': _formatDateTime(locationStats['startTime'] ?? 'N/A'),
+                  'startTime':
+                      _formatDateTime(locationStats['startTime'] ?? 'N/A'),
                   'endTime': _formatDateTime(locationStats['endTime'] ?? 'N/A'),
                   'duration': locationStats['duration'] ?? 'N/A',
                 };
@@ -1361,6 +1244,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       isLoading = false;
     });
   }
+
   Future<List<Map<String, String>>> _fetchUserBoards() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) {
@@ -1478,7 +1362,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         for (var wordDoc in wordsSnapshot.docs) {
           String wordId = wordDoc.id;
           String wordName = wordDoc.data()['wordName'] ?? 'Unknown';
-          String wordCategory = wordDoc.data()['wordCategory'] ?? 'Uncategorized';
+          String wordCategory =
+              wordDoc.data()['wordCategory'] ?? 'Uncategorized';
 
           if (!wordInfo.containsKey(wordId)) {
             wordInfo[wordId] = {
@@ -1492,12 +1377,14 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       }
 
       // Convert the word info to the format we need
-      List<Map<String, dynamic>> wordData = wordInfo.entries.map((entry) => {
-        'word': entry.key,
-        'wordName': entry.value['wordName'],
-        'wordCategory': entry.value['wordCategory'],
-        'count': entry.value['count'],
-      }).toList();
+      List<Map<String, dynamic>> wordData = wordInfo.entries
+          .map((entry) => {
+                'word': entry.key,
+                'wordName': entry.value['wordName'],
+                'wordCategory': entry.value['wordCategory'],
+                'count': entry.value['count'],
+              })
+          .toList();
 
       // Sort the words by count in descending order
       wordData.sort((a, b) => b['count'].compareTo(a['count']));
@@ -1514,16 +1401,16 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
       if (category == 'All') {
         filteredItems = allItems
             .where((item) => item['address']!
-            .toLowerCase()
-            .contains(_popupSearchQuery.toLowerCase()))
+                .toLowerCase()
+                .contains(_popupSearchQuery.toLowerCase()))
             .toList();
       } else {
         filteredItems = allItems
             .where((item) =>
-        item['type'] == category &&
-            item['address']!
-                .toLowerCase()
-                .contains(_popupSearchQuery.toLowerCase()))
+                item['type'] == category &&
+                item['address']!
+                    .toLowerCase()
+                    .contains(_popupSearchQuery.toLowerCase()))
             .toList();
       }
     });
@@ -1543,9 +1430,10 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     }
 
     return items
-        .where((item) => item['address'].toString()
-        .toLowerCase()
-        .contains(_popupSearchQuery.toLowerCase()))
+        .where((item) => item['address']
+            .toString()
+            .toLowerCase()
+            .contains(_popupSearchQuery.toLowerCase()))
         .toList();
   }
 
@@ -1577,8 +1465,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
     switch (widget.title) {
       case 'Words':
-        filterOptions = ['All'] + allItems.map((item) =>
-        item['category'] as String).toSet().toList();
+        filterOptions = ['All'] +
+            allItems.map((item) => item['category'] as String).toSet().toList();
         filterLabel = 'Category: ';
         break;
       case 'Locations':
@@ -1615,14 +1503,14 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
               if (widget.title == 'Words') {
                 filteredItems = _filterItems()
                     .where((item) =>
-                _selectedFilter == 'All' ||
-                    item['category'] == _selectedFilter)
+                        _selectedFilter == 'All' ||
+                        item['category'] == _selectedFilter)
                     .toList();
               } else if (widget.title == 'Activities') {
                 filteredItems = _filterItems()
                     .where((item) =>
-                _selectedFilter == 'All' ||
-                    item['type'] == _selectedFilter)
+                        _selectedFilter == 'All' ||
+                        item['type'] == _selectedFilter)
                     .toList();
               } else {
                 _filterItemsByCategory(_selectedFilter);
@@ -1679,29 +1567,40 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
             ),
             Expanded(
               child: isLoading
-                  ? const Center(child: CircularProgressIndicator()) // Display loading indicator
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator()) // Display loading indicator
                   : widget.title == 'Locations' && filteredItems.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.separated(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: filteredItems.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final item = filteredItems[index];
-                  return ListTile(
-                    title: Text(item['address'] ?? item['type'] ?? 'Unknown'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (item['counter'] != null) Text('Times visited: ${item['counter'] ?? '0'}'),
-                        if (item['startTime'] != null) Text('Last visit start: ${item['startTime'] ?? 'N/A'}'),
-                        if (item['endTime'] != null) Text('Last visit end: ${item['endTime'] ?? 'N/A'}'),
-                        if (item['duration'] != null) Text('Last visit duration: ${item['duration'] ?? 'N/A'} seconds'),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16.0),
+                          itemCount: filteredItems.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final item = filteredItems[index];
+                            return ListTile(
+                              title: Text(
+                                  item['address'] ?? item['type'] ?? 'Unknown'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (item['counter'] != null)
+                                    Text(
+                                        'Times visited: ${item['counter'] ?? '0'}'),
+                                  if (item['startTime'] != null)
+                                    Text(
+                                        'Last visit start: ${item['startTime'] ?? 'N/A'}'),
+                                  if (item['endTime'] != null)
+                                    Text(
+                                        'Last visit end: ${item['endTime'] ?? 'N/A'}'),
+                                  if (item['duration'] != null)
+                                    Text(
+                                        'Last visit duration: ${item['duration'] ?? 'N/A'} seconds'),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
