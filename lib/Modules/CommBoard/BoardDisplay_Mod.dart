@@ -580,8 +580,8 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
     }
   }
 
-  Color _getTextColorForCategory(String category) {
-    return category.toLowerCase() == 'conjunctions' ? Colors.black54 : Colors.white;
+Color _getTextColorForCategory(String category) {
+    return category.toLowerCase() == 'determiners' ? Colors.white : Colors.black;
   }
 
   Color _getColorForCategory(String category) {
@@ -595,17 +595,21 @@ class _BoardDisplay_ModState extends State<BoardDisplay_Mod> {
       case 'adjectives':
         return const Color(0xff69c8ff);
       case 'prepositions':
+        return const Color(0xffff8cd2);
       case 'social words':
         return const Color(0xffff8cd2);
       case 'questions':
         return const Color(0xffa77dff);
-      case 'negation':
+      case 'negations':
+        return const Color(0xffff5150);
       case 'important words':
         return const Color(0xffff5150);
       case 'adverbs':
         return const Color(0xffc19b84);
       case 'conjunctions':
         return const Color(0xffffffff);
+      case 'determiners':
+        return const Color(0xff464646);
       default:
         return Colors.grey;
     }

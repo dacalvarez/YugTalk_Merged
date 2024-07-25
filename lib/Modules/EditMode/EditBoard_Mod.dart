@@ -9,7 +9,12 @@ class EditBoard_Mod extends StatefulWidget {
   final String userID;
   final Function() refreshParent;
 
-  const EditBoard_Mod({Key? key, required this.boardID, required this.userID, required this.refreshParent}) : super(key: key);
+  const EditBoard_Mod(
+      {Key? key,
+      required this.boardID,
+      required this.userID,
+      required this.refreshParent})
+      : super(key: key);
 
   @override
   _EditBoard_ModState createState() => _EditBoard_ModState();
@@ -60,9 +65,17 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
           data['wordName'] = data['wordName'] ?? '';
           data['wordImage'] = data['wordImage'] ?? '';
           data['wordCategory'] = data['wordCategory'] ?? '';
-          data['isLinked'] = data.containsKey('isLinked') ? data['isLinked'] : null;
+          data['isLinked'] =
+              data.containsKey('isLinked') ? data['isLinked'] : null;
         }
-        return data ?? {'id': doc.id, 'wordName': '', 'wordImage': '', 'wordCategory': '', 'isLinked': null};
+        return data ??
+            {
+              'id': doc.id,
+              'wordName': '',
+              'wordImage': '',
+              'wordCategory': '',
+              'isLinked': null
+            };
       }).toList();
     } catch (e) {
       print("Error fetching symbols: $e");
@@ -80,7 +93,8 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: GText('Error loading symbols: ${snapshot.error}'));
+          return Center(
+              child: GText('Error loading symbols: ${snapshot.error}'));
         } else if (rows == null || columns == null) {
           return Center(child: GText('Loading board details...'));
         } else {
@@ -97,10 +111,16 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
             builder: (context, constraints) {
               double maxContainerWidth = constraints.maxWidth;
               double maxContainerHeight = constraints.maxHeight;
-              double cellSize = ((maxContainerWidth - (columns! - 1) * 8.0 - 10) / columns!).clamp(0.0, (maxContainerHeight - (rows! - 1) * 8.0 - 10) / rows!).toDouble();
+              double cellSize =
+                  ((maxContainerWidth - (columns! - 1) * 8.0 - 10) / columns!)
+                      .clamp(0.0,
+                          (maxContainerHeight - (rows! - 1) * 8.0 - 10) / rows!)
+                      .toDouble();
 
-              double containerWidth = cellSize * columns! + (columns! - 1) * 8.0 + 10;
-              double containerHeight = cellSize * rows! + (rows! - 1) * 8.0 + 10;
+              double containerWidth =
+                  cellSize * columns! + (columns! - 1) * 8.0 + 10;
+              double containerHeight =
+                  cellSize * rows! + (rows! - 1) * 8.0 + 10;
 
               return Center(
                 child: Container(
@@ -142,7 +162,9 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                           width: cellSize,
                           height: cellSize,
                           decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                            color: isDarkMode
+                                ? Colors.grey[800]
+                                : Colors.grey[200],
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: _buildSymbolContainer(symbol, cellSize),
@@ -159,6 +181,12 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
     );
   }
 
+  Color _getTextColorForCategory(String category) {
+    return category.toLowerCase() == 'determiners'
+        ? Colors.white
+        : Colors.black;
+  }
+
   Color _getColorForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'nouns':
@@ -170,24 +198,24 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
       case 'adjectives':
         return const Color(0xff69c8ff);
       case 'prepositions':
+        return const Color(0xffff8cd2);
       case 'social words':
         return const Color(0xffff8cd2);
       case 'questions':
         return const Color(0xffa77dff);
-      case 'negation':
+      case 'negations':
+        return const Color(0xffff5150);
       case 'important words':
         return const Color(0xffff5150);
       case 'adverbs':
         return const Color(0xffc19b84);
       case 'conjunctions':
         return const Color(0xffffffff);
+      case 'determiners':
+        return const Color(0xff464646);
       default:
         return Colors.grey;
     }
-  }
-
-  Color _getTextColorForCategory(String category) {
-    return category.toLowerCase() == 'conjunctions' ? Colors.black54 : Colors.white;
   }
 
   Widget _buildSymbolContainer(Map<String, dynamic> data, double cellSize) {
@@ -197,9 +225,12 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           bool showImageOnly = constraints.maxHeight < 100;
-          double imageSize = showImageOnly ? constraints.maxHeight * 0.7 : constraints.maxHeight * 0.5;
+          double imageSize = showImageOnly
+              ? constraints.maxHeight * 0.7
+              : constraints.maxHeight * 0.5;
           double? fontSize = showImageOnly ? 0 : 16;
-          Color textColor = _getTextColorForCategory(data['wordCategory'] ?? '');
+          Color textColor =
+              _getTextColorForCategory(data['wordCategory'] ?? '');
 
           return Card(
             color: _getColorForCategory(data['wordCategory'] ?? ''),
@@ -214,14 +245,16 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
                 _buildImage(data['wordImage'] ?? '', imageSize),
                 if (!showImageOnly)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 4.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             data['wordName'] ?? '',
-                            style: TextStyle(fontSize: fontSize, color: textColor),
+                            style:
+                                TextStyle(fontSize: fontSize, color: textColor),
                             textAlign: TextAlign.center,
                           ),
                         ),
