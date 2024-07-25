@@ -23,6 +23,7 @@ class DrawerWidget extends StatefulWidget {
 class _DrawerWidgetState extends State<DrawerWidget> {
   bool _showLocation = false;
   StreamSubscription<Position>? _positionStreamSubscription;
+  String _currentLocation = 'Unknown';
 
   @override
   void initState() {
@@ -37,12 +38,21 @@ class _DrawerWidgetState extends State<DrawerWidget> {
   }
 
   Future<void> _checkLocationPermission() async {
+    print('Checking location permission');
     var status = await Permission.location.status;
     setState(() {
       _showLocation = status.isGranted;
     });
     if (_showLocation) {
       _startLocationStream();
+    } else {
+      // Request permission if not granted
+      if (await Permission.location.request().isGranted) {
+        setState(() {
+          _showLocation = true;
+        });
+        _startLocationStream();
+      }
     }
     if (await Permission.locationAlways.isDenied) {
       await Permission.locationAlways.request();
@@ -55,43 +65,96 @@ class _DrawerWidgetState extends State<DrawerWidget> {
         accuracy: LocationAccuracy.high,
         distanceFilter: 10,
       ),
-    ).listen((Position position) {
-      _updateLocation(position);
-    },
+    ).listen(
+          (Position position) {
+        print('Received position update: ${position.latitude}, ${position.longitude}');
+        _updateLocation(position);
+      },
       onError: (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GText('Error in location stream: $error')),
-        );
+        print('Error in location stream: $error');
+        if (error is LocationServiceDisabledException) {
+          // Handle case where location services are disabled
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: GText('Please enable location services')),
+          );
+        }
       },
     );
   }
 
   Future<void> _updateLocation(Position position) async {
-    if (!mounted) return;
+    try {
+      if (!mounted) return;
 
+      LatLng currentPosition = LatLng(position.latitude, position.longitude);
+      String locationType = await _checkCurrentLocation(currentPosition);
+
+      await _updateFirestoreLocation(position, locationType);
+
+      setState(() {
+        _currentLocation = locationType;
+        print('Updated current location to: $_currentLocation');
+      });
+    } catch (e) {
+      print('Error updating location: $e');
+    }
+  }
+
+  Future<void> _updateFirestoreLocation(Position position, String locationType) async {
     DateTime timestamp = DateTime.now();
-
-    String encryptedLocation = _encryptLocation({
-      'latitude': position.latitude,
-      'longitude': position.longitude,
+    Map<String, dynamic> locationData = {
+      'currentLocation': {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'timestamp': timestamp.toUtc().millisecondsSinceEpoch,
+        'locationType': locationType,
+      },
+      'Home': {},
+      'School': {},
+      'Clinic': {},
       'timestamp': timestamp.toUtc().millisecondsSinceEpoch,
-    });
+    };
+
+    String encryptedLocation = base64Url.encode(utf8.encode(json.encode(locationData)));
+    print('Encrypted location data: $encryptedLocation');
 
     await FirebaseFirestore.instance
         .collection('currentLocation')
         .doc(FirebaseAuth.instance.currentUser!.email)
-        .update({
+        .set({
       'currentLocation': encryptedLocation,
     });
 
-    // Check if user is inside any saved location
-    LatLng currentPosition = LatLng(position.latitude, position.longitude);
-    String currentLocationType = await _checkCurrentLocation(currentPosition);
+    // Update location counters
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .get();
 
-    // Update the UI if needed
-    if (mounted) {
-      setState(() {});
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> locationCounters = data['locationCounters'] ?? {};
+
+    if (!locationCounters.containsKey(locationType)) {
+      locationCounters[locationType] = base64Url.encode(utf8.encode(json.encode({
+        'counter': 1,
+        'startTime': timestamp.toIso8601String(),
+        'endTime': null,
+        'duration': 0,
+      })));
+    } else {
+      Map<String, dynamic> typeData = json.decode(utf8.decode(base64Url.decode(locationCounters[locationType])));
+      typeData['counter']++;
+      typeData['endTime'] = timestamp.toIso8601String();
+      typeData['duration'] = timestamp.difference(DateTime.parse(typeData['startTime'])).inSeconds;
+      locationCounters[locationType] = base64Url.encode(utf8.encode(json.encode(typeData)));
     }
+
+    await FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(FirebaseAuth.instance.currentUser!.email)
+        .update({
+      'locationCounters': locationCounters,
+    });
   }
 
   Future<String> _checkCurrentLocation(LatLng currentPosition) async {
@@ -110,7 +173,12 @@ class _DrawerWidgetState extends State<DrawerWidget> {
           List<Map<String, dynamic>> locations = _decodeLocations(encodedLocation);
           for (var location in locations) {
             LatLng savedLocation = LatLng(location['latitude'], location['longitude']);
-            double distance = calculateDistance(currentPosition, savedLocation);
+            double distance = Geolocator.distanceBetween(
+              currentPosition.latitude,
+              currentPosition.longitude,
+              savedLocation.latitude,
+              savedLocation.longitude,
+            );
             if (distance <= 250) {
               return locationType;
             }
@@ -120,6 +188,31 @@ class _DrawerWidgetState extends State<DrawerWidget> {
     }
 
     return 'Outside';
+  }
+
+  List<Map<String, dynamic>> _decodeLocations(String encodedLocations) {
+    List<int> bytes = base64Url.decode(encodedLocations);
+    String jsonString = utf8.decode(bytes);
+    return (json.decode(jsonString) as List).cast<Map<String, dynamic>>();
+  }
+
+  double calculateDistance(LatLng point1, LatLng point2) {
+    return Geolocator.distanceBetween(
+      point1.latitude,
+      point1.longitude,
+      point2.latitude,
+      point2.longitude,
+    );
+  }
+
+  bool _isCurrentRoute(BuildContext context, String routeName) {
+    return ModalRoute.of(context)?.settings.name == routeName;
+  }
+
+  String _encryptLocation(Map<String, dynamic> location) {
+    String jsonString = json.encode(location);
+    List<int> bytes = utf8.encode(jsonString);
+    return base64Url.encode(bytes);
   }
 
   Stream<String?> _getLocationStream() {
@@ -181,31 +274,6 @@ class _DrawerWidgetState extends State<DrawerWidget> {
         return null;
       }
     });
-  }
-
-  String _encryptLocation(Map<String, dynamic> location) {
-    String jsonString = json.encode(location);
-    List<int> bytes = utf8.encode(jsonString);
-    return base64Url.encode(bytes);
-  }
-
-  List<Map<String, dynamic>> _decodeLocations(String encodedLocations) {
-    List<int> bytes = base64Url.decode(encodedLocations);
-    String jsonString = utf8.decode(bytes);
-    return (json.decode(jsonString) as List).cast<Map<String, dynamic>>();
-  }
-
-  double calculateDistance(LatLng point1, LatLng point2) {
-    return Geolocator.distanceBetween(
-      point1.latitude,
-      point1.longitude,
-      point2.latitude,
-      point2.longitude,
-    );
-  }
-
-  bool _isCurrentRoute(BuildContext context, String routeName) {
-    return ModalRoute.of(context)?.settings.name == routeName;
   }
 
   @override

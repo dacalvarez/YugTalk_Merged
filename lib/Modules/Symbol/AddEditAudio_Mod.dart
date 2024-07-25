@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:gtext/gtext.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
 import 'dart:io';
+import 'package:record/record.dart';
 
 class AddEditAudio extends StatefulWidget {
   final String audioPath;
@@ -30,7 +30,7 @@ class AddEditAudio extends StatefulWidget {
 }
 
 class _AddEditAudioState extends State<AddEditAudio> {
-  FlutterSoundRecorder? _recorder;
+  final AudioRecorder _recorder = AudioRecorder();
   AudioPlayer? _player;
   bool _isRecording = false;
   bool _isPlaying = false;
@@ -42,7 +42,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
   @override
   void initState() {
     super.initState();
-    _recorder = FlutterSoundRecorder();
     _player = AudioPlayer();
     _initializeRecorder();
     if (widget.audioPath.isNotEmpty) {
@@ -62,7 +61,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
           return;
         }
       }
-      await _recorder!.openRecorder();
     } catch (e) {
       _showError('Failed to initialize recorder: $e');
     }
@@ -79,25 +77,20 @@ class _AddEditAudioState extends State<AddEditAudio> {
 
   Future<void> _startRecording() async {
     try {
-      late String filePath;
-      if (Platform.isIOS) {
-        Directory appDocDir = await getApplicationDocumentsDirectory();
-        filePath = '${appDocDir.path}/recorded_audio.aac';
-      } else {
-        Directory cacheDir = await getTemporaryDirectory();
-        filePath = '${cacheDir.path}/recorded_audio.${getSupportedFileExtension()}';
-      }
+      if (await _recorder.hasPermission()) {
+        Directory tempDir = await getTemporaryDirectory();
+        String filePath = '${tempDir.path}/recorded_audio.${getSupportedFileExtension()}';
 
-      _recordedFilePath = filePath;
-      await _recorder!.startRecorder(
-        toFile: _recordedFilePath,
-        codec: Codec.aacADTS,
-      );
-      setState(() {
-        _isRecording = true;
-        _recordDuration = 0;
-      });
-      _startTimer();
+        await _recorder.start(const RecordConfig(), path: filePath);
+        setState(() {
+          _isRecording = true;
+          _recordDuration = 0;
+          _recordedFilePath = filePath;
+        });
+        _startTimer();
+      } else {
+        _showError('Microphone permission denied.');
+      }
     } catch (e) {
       _showError('Failed to start recording: $e');
     }
@@ -105,14 +98,14 @@ class _AddEditAudioState extends State<AddEditAudio> {
 
   Future<void> _stopRecording() async {
     try {
-      await _recorder!.stopRecorder();
+      String? path = await _recorder.stop();
       _stopTimer();
       setState(() {
         _isRecording = false;
         _hasUnsavedChanges = true;
+        _recordedFilePath = path;
       });
 
-      // No need to upload to Firebase here
       if (_recordedFilePath != null) {
         widget.onAudioChanged(_recordedFilePath!);
       }
@@ -120,6 +113,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
       _showError('Failed to stop recording: $e');
     }
   }
+
 
   Future<void> _playRecording() async {
     try {
@@ -129,7 +123,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
           await _player!.setUrl(_recordedFilePath!);
         } else {
           // It's a local file path
-          await _player!.setAudioSource(AudioSource.file(_recordedFilePath!));
+          await _player!.setFilePath(_recordedFilePath!);
         }
 
         await _player!.play();
@@ -202,7 +196,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
   Future<void> _uploadAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['wav', 'aiff', 'alac', 'flac', 'mp3', 'aac', 'wma', 'ogg'],
+      allowedExtensions: ['wav', 'aiff', 'alac', 'flac', 'mp3', 'aac', 'wma', 'ogg', 'm4a'],
     );
 
     if (result != null) {
@@ -273,10 +267,9 @@ class _AddEditAudioState extends State<AddEditAudio> {
     }
   }
 
-
   String getSupportedFileExtension() {
     if (Platform.isAndroid || Platform.isIOS) {
-      return 'aac'; // Use .aac on mobile platforms
+      return 'm4a'; // Use .m4a on mobile platforms
     } else {
       return 'wav'; // Use .wav on other platforms for better compatibility
     }
@@ -335,11 +328,12 @@ class _AddEditAudioState extends State<AddEditAudio> {
 
   @override
   void dispose() {
-    _recorder!.closeRecorder();
+    _recorder.dispose();
     _player!.dispose();
     _stopTimer();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
