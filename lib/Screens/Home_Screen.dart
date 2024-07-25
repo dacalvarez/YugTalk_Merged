@@ -1079,7 +1079,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           children: [
             GText(
               widget.title,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
             Row(
