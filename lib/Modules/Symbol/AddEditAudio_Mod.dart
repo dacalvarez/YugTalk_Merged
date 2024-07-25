@@ -114,7 +114,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
     }
   }
 
-
   Future<void> _playRecording() async {
     try {
       if (_recordedFilePath != null) {
@@ -269,9 +268,9 @@ class _AddEditAudioState extends State<AddEditAudio> {
 
   String getSupportedFileExtension() {
     if (Platform.isAndroid || Platform.isIOS) {
-      return 'm4a'; // Use .m4a on mobile platforms
+      return 'm4a';
     } else {
-      return 'wav'; // Use .wav on other platforms for better compatibility
+      return 'wav';
     }
   }
 
@@ -354,13 +353,11 @@ class _AddEditAudioState extends State<AddEditAudio> {
                   if (_isRecording)
                     Container(
                       padding: const EdgeInsets.all(10),
-                      color: Colors.grey[200],
                       child: GText('Recording in progress...'),
                     )
                   else if (_recordedFilePath != null)
                     Container(
                       padding: const EdgeInsets.all(10),
-                      color: Colors.grey[200],
                       child: GText('Recorded audio data available.'),
                     ),
                   const SizedBox(height: 10),
@@ -457,21 +454,16 @@ class _AddEditAudioState extends State<AddEditAudio> {
           child: Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              children: [
-                GText(
-                  _isRecording ? 'Recording' : 'Record',
-                  style: TextStyle(color: Colors.white),
-                ),
-                if (_isRecording)
-                  Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: GText(
-                      'Press to stop recording',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-              ],
+            child: Center(
+              child: _isRecording
+                  ? GText(
+                'Stop Recording',
+                style: TextStyle(color: Colors.white),
+              )
+                  : GText(
+                'Record',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ),
@@ -480,7 +472,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
             padding: EdgeInsets.only(top: 8),
             child: GText(
               'Recording time: ${_recordDuration}s',
-              style: TextStyle(color: Colors.black54),
             ),
           ),
       ],
