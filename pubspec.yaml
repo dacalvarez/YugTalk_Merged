@@ -80,14 +80,13 @@ dependencies:
   just_audio: ^0.9.39
   translator: ^0.1.7
   firebase_storage: ^11.7.7
-  flutter_sound: ^9.2.13
   file_picker: ^8.0.6
   image: ^4.2.0
   video_compress: 3.1.1
   file_selector: ^1.0.3
   flutter_secure_storage: ^9.2.2
   record: ^5.1.2
-
+  rxdart: ^0.27.3
 
 dev_dependencies:
   flutter_test:

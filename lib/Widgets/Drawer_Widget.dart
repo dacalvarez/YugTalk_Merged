@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:yugtalk/Modules/Authentication/Authentication_Mod.dart';
 import 'package:yugtalk/Screens/AboutUs_Screen.dart';
 import 'package:yugtalk/Screens/Account_Screen.dart';
@@ -216,12 +217,33 @@ class _DrawerWidgetState extends State<DrawerWidget> {
   }
 
   Stream<String?> _getLocationStream() {
-    return Stream.periodic(const Duration(seconds: 1)).asyncMap((_) async {
+    return Stream.periodic(const Duration(seconds: 1))
+        .asyncMap((_) async {
       if (!_showLocation) {
         return null;
       }
 
       try {
+        // Check if location services are enabled
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          return 'Location services disabled';
+        }
+
+        // Check location permission
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) {
+            return 'Location permission denied';
+          }
+        }
+
+        if (permission == LocationPermission.deniedForever) {
+          return 'Location permissions permanently denied';
+        }
+
+        // Get current position
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
@@ -234,6 +256,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
           'timestamp': timestamp.toUtc().millisecondsSinceEpoch,
         });
 
+        // Update Firestore
         await FirebaseFirestore.instance
             .collection('currentLocation')
             .doc(FirebaseAuth.instance.currentUser!.email)
@@ -243,6 +266,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
 
         LatLng currentPosition = LatLng(position.latitude, position.longitude);
 
+        // Get user settings
         DocumentSnapshot settingsDoc = await FirebaseFirestore.instance
             .collection('userSettings')
             .doc(FirebaseAuth.instance.currentUser!.email)
@@ -270,9 +294,20 @@ class _DrawerWidgetState extends State<DrawerWidget> {
         return 'Outside';
       } catch (e) {
         print('Error in location stream: $e');
-
-        return null;
+        if (e is LocationServiceDisabledException) {
+          return 'Location services disabled';
+        }
+        if (e is PermissionDeniedException) {
+          return 'Location permission denied';
+        }
+        return 'Error getting location';
       }
+    })
+        .distinct() // Only emit when the value changes
+        .debounce((_) => TimerStream(true, const Duration(milliseconds: 500))) // Debounce rapid updates
+        .handleError((error) {
+      print('Error in location stream: $error');
+      return 'Error';
     });
   }
 
@@ -336,6 +371,13 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                                           child: CircularProgressIndicator(
                                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                             strokeWidth: 2,
+                                          ),
+                                        )
+                                      else if (snapshot.hasError)
+                                        GText(
+                                          'Error',
+                                          style: const TextStyle(
+                                            color: Colors.red,
                                           ),
                                         )
                                       else
