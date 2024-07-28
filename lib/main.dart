@@ -148,7 +148,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
   void initState() {
     super.initState();
     _setupLocationMonitoring();
-    _loadData();
+    //_loadData();
   }
 
   void _setupLocationMonitoring() {

@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'global_snackbar.dart';
 
@@ -15,37 +16,34 @@ class LocationMonitor {
 
   static const double RADIUS_METERS = 250;
   Map<String, List<Map<String, dynamic>>> _locations = {};
+
+  Map<String, bool> _lastLocationState = {};
+  Map<String, int> _locationCounters = {};
+
   Map<String, bool> _isInside = {};
+  Map<String, dynamic> _currentLocationData = {};
   StreamSubscription<ServiceStatus>? _serviceStatusStream;
   StreamSubscription<Position>? _positionStream;
   final _locationController = StreamController<String>.broadcast();
-  Map<String, DateTime> _lastNotificationTime = {};
+  Map<String, LocationData> _locationData = {
+    'Home': LocationData(),
+    'Clinic': LocationData(),
+    'School': LocationData(),
+  };
   bool _isMonitoring = false;
-  Map<String, bool> _lastLocationState = {};
-  Map<String, int> _locationCounters = {};
-  Map<String, dynamic> _currentLocationData = {};
+  Map<String, DateTime> _lastNotificationTime = {};
 
   Stream<String> get locationStream => _locationController.stream;
 
   void _showNotification(String locationType, bool isInside) {
     DateTime now = DateTime.now();
-    bool? lastState = _lastLocationState[locationType];
-
-    // Only show notification if the state has changed and enough time has passed
-    if (lastState == null || lastState != isInside) {
-      // Check if enough time has passed since the last notification
-      DateTime? lastNotificationTime = _lastNotificationTime[locationType];
-      if (lastNotificationTime == null || now.difference(lastNotificationTime).inSeconds >= 60) {
-        String message = isInside
-            ? "You've entered the $locationType area"
-            : "You've left the $locationType area";
-        _locationController.add(message);
-        _lastNotificationTime[locationType] = now;
-        _lastLocationState[locationType] = isInside;
-
-        // Use GlobalSnackBar to show the notification
-        GlobalSnackBar.show(message);
-      }
+    DateTime? lastNotificationTime = _lastNotificationTime[locationType];
+    if (lastNotificationTime == null || now.difference(lastNotificationTime).inSeconds >= 60) {
+      String message = isInside
+          ? "You've entered the $locationType area"
+          : "You've left the $locationType area";
+      GlobalSnackBar.show(message);
+      _lastNotificationTime[locationType] = now;
     }
   }
 
@@ -85,19 +83,23 @@ class LocationMonitor {
 
     _isMonitoring = true;
 
+    // Load persisted data before starting the monitoring
+    await _loadPersistedData();
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (serviceEnabled) {
       await _startPositionStream();
     }
 
     if (!kIsWeb) {
-      _serviceStatusStream = Geolocator.getServiceStatusStream().listen((ServiceStatus status) {
-        if (status == ServiceStatus.enabled) {
-          _startPositionStream();
-        } else {
-          _stopPositionStream();
-        }
-      });
+      _serviceStatusStream =
+          Geolocator.getServiceStatusStream().listen((ServiceStatus status) {
+            if (status == ServiceStatus.enabled) {
+              _startPositionStream();
+            } else {
+              _stopPositionStream();
+            }
+          });
     }
   }
 
@@ -164,6 +166,47 @@ class LocationMonitor {
         .set({
       'currentLocation': encryptedData,
     }, SetOptions(merge: true));
+  }
+
+  Future<void> _persistData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> dataToSave = {};
+    _locationData.forEach((key, value) {
+      dataToSave[key] = value.toJson();
+    });
+    String encryptedData = _encryptData(json.encode(dataToSave));
+    await prefs.setString('locationData', encryptedData);
+  }
+
+  Future<void> _loadPersistedData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? encryptedData = prefs.getString('locationData');
+    if (encryptedData != null) {
+      String decryptedData = _decryptData(encryptedData);
+      Map<String, dynamic> loadedData = json.decode(decryptedData);
+      loadedData.forEach((key, value) {
+        _locationData[key] = LocationData.fromJson(value);
+      });
+    }
+  }
+
+  Future<void> _uploadDataToFirestore() async {
+    try {
+      Map<String, dynamic> dataToUpload = {};
+      _locationData.forEach((key, value) {
+        dataToUpload[key] = value.toJson();
+      });
+      String encryptedData = _encryptData(json.encode(dataToUpload));
+
+      await FirebaseFirestore.instance
+          .collection('locationStats')
+          .doc(FirebaseAuth.instance.currentUser!.email)
+          .set({
+        'encryptedLocationData': encryptedData,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error uploading location data: $e');
+    }
   }
 
   String _encryptData(String data) {
@@ -233,61 +276,37 @@ class LocationMonitor {
           isNowInside = true;
           break;
         }
-              }
+      }
 
       if (!wasInside && isNowInside) {
         _isInside[locationType] = true;
-        _showNotification(locationType, true);
         _updateLocationData(locationType, true);
+        _showNotification(locationType, true);
       } else if (wasInside && !isNowInside) {
         _isInside[locationType] = false;
-        _showNotification(locationType, false);
         _updateLocationData(locationType, false);
+        _showNotification(locationType, false);
       }
     });
   }
 
   void _updateLocationData(String locationType, bool isEntering) {
     DateTime now = DateTime.now();
-
-    // Decrypt the existing data if it exists, or create a new map
-    Map<String, dynamic> locationData;
-    if (_currentLocationData.containsKey(locationType) && _currentLocationData[locationType] is String) {
-      locationData = _decryptLocationData(_currentLocationData[locationType] as String);
-    } else {
-      locationData = {};
-    }
+    LocationData data = _locationData[locationType]!;
 
     if (isEntering) {
-      locationData['counter'] = (locationData['counter'] ?? 0) + 1;
-      locationData['startTime'] = now.toIso8601String();
-      locationData['endTime'] = null;
-      locationData['duration'] = 0;
+      data.counter++;
+      data.startTime = now;
+      data.endTime = null;
     } else {
-      locationData['endTime'] = now.toIso8601String();
-      if (locationData['startTime'] != null) {
-        DateTime startTime = DateTime.parse(locationData['startTime']);
-        Duration duration = now.difference(startTime);
-        locationData['duration'] = duration.inSeconds;
+      data.endTime = now;
+      if (data.startTime != null) {
+        data.duration += now.difference(data.startTime!);
       }
     }
 
-    // Encrypt the updated location data
-    String encryptedLocationData = _encryptLocationData(locationData);
-
-    // Update the _currentLocationData with the encrypted data
-    _currentLocationData[locationType] = encryptedLocationData;
-
-    // Save the encrypted data to Firestore
-    FirebaseFirestore.instance
-        .collection('currentLocation')
-        .doc(FirebaseAuth.instance.currentUser!.email)
-        .set({
-      locationType: encryptedLocationData,
-    }, SetOptions(merge: true));
-
-    print('Updated Location Data for $locationType:');
-    print(locationData);
+    _persistData();
+    _uploadDataToFirestore();
   }
 
   String _encryptLocationData(Map<String, dynamic> data) {
@@ -374,3 +393,35 @@ class LocationMonitor {
       point2.longitude,
     );
   }
+
+class LocationData {
+  int counter;
+  DateTime? startTime;
+  DateTime? endTime;
+  Duration duration;
+
+  LocationData({
+    this.counter = 0,
+    this.startTime,
+    this.endTime,
+    this.duration = Duration.zero,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'counter': counter,
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+      'duration': duration.inSeconds,
+    };
+  }
+
+  factory LocationData.fromJson(Map<String, dynamic> json) {
+    return LocationData(
+      counter: json['counter'],
+      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
+      duration: Duration(seconds: json['duration']),
+    );
+  }
+}
