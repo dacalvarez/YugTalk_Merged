@@ -686,9 +686,8 @@ class _MapScreenState extends State<MapScreen> {
           );
         }
       } catch (e) {
-        print('Error during search: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GText('An error occurred while searching')),
+          SnackBar(content: GText('An error occurred while searching: $e')),
         );
       }
     }

@@ -64,6 +64,11 @@ class _AddEditVideoState extends State<AddEditVideo> {
         print("Current video path after compression: $_currentVideo");
         _isLoading = false;
       });
+
+      _showSuccessMessage('Video successfully ${widget.wordVideo.isEmpty ?
+      'added' :
+      'updated'}');
+
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -103,10 +108,19 @@ class _AddEditVideoState extends State<AddEditVideo> {
       print("Compressed video path: ${info?.file?.path}");
       return info?.file;
     } catch (e) {
-      print("Error compressing video: $e");
+      _showErrorDialog('Error compressing video: $e');
       _subscription?.unsubscribe();
       return null;
     }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
@@ -129,6 +143,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
     setState(() {
       _currentVideo = '';
     });
+    _showSuccessMessage('Video successfully deleted');
   }
 
   @override
@@ -229,6 +244,9 @@ class _AddEditVideoState extends State<AddEditVideo> {
             onPressed: () {
               widget.onVideoChanged(_currentVideo);
               Navigator.pop(context);
+              if (_currentVideo.isNotEmpty) {
+                _showSuccessMessage('Video successfully ${widget.wordVideo.isEmpty ? 'added' : 'updated'}');
+              }
             },
             child: GText('Save'),
           ),

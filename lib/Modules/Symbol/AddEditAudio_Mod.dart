@@ -16,6 +16,8 @@ class AddEditAudio extends StatefulWidget {
   final ValueChanged<String> onAudioChanged;
   final String? boardId;
   final String? symbolId;
+  final Function(String) showMessage;
+
 
   const AddEditAudio({
     Key? key,
@@ -23,6 +25,7 @@ class AddEditAudio extends StatefulWidget {
     required this.onAudioChanged,
     required this.boardId,
     required this.symbolId,
+    required this.showMessage,
   }) : super(key: key);
 
   @override
@@ -247,6 +250,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
                   .update({'wordAudio': ''});
             } catch (firestoreError) {
               print('Failed to update Firestore: $firestoreError');
+              _showError('Failed to update Firestore: $firestoreError');
               // If the document doesn't exist, we can ignore this error
               if (firestoreError is! FirebaseException || firestoreError.code != 'not-found') {
                 throw firestoreError;  // Re-throw if it's not a 'not-found' error
@@ -387,6 +391,7 @@ class _AddEditAudioState extends State<AddEditAudio> {
           onPressed: () {
             if (_recordedFilePath != null) {
               widget.onAudioChanged(_recordedFilePath!);
+              widget.showMessage('Audio Saved Successfully');
             }
             Navigator.pop(context);
           },
@@ -519,7 +524,13 @@ class _AddEditAudioState extends State<AddEditAudio> {
   }
 }
 
-void showAddEditAudioDialog(BuildContext context, String wordAudio, ValueChanged<String> onAudioChanged, {required String boardId, required String symbolId}) {
+void showAddEditAudioDialog(
+    BuildContext context,
+    String wordAudio,
+    ValueChanged<String> onAudioChanged, {
+      required String boardId,
+      required String symbolId
+    }) {
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -527,7 +538,7 @@ void showAddEditAudioDialog(BuildContext context, String wordAudio, ValueChanged
       audioPath: wordAudio,
       onAudioChanged: onAudioChanged,
       boardId: boardId,
-      symbolId: symbolId,
+      symbolId: symbolId, showMessage: (String) { 'Audio Edited Successfully'; },
     ),
   );
 }

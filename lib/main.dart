@@ -1,3 +1,4 @@
+import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:device_preview_minus/device_preview_minus.dart';
@@ -5,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:gtext/gtext.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:yugtalk/Screens/Onboarding_Screen.dart';
 import 'Modules/Authentication/Verification_Widget.dart';
 import 'Screens/Home_Screen.dart';
@@ -38,6 +41,33 @@ void main() async {
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
+
+  // Initialize background fetch
+  BackgroundFetch.configure(BackgroundFetchConfig(
+      minimumFetchInterval: 1,
+      stopOnTerminate: false,
+      enableHeadless: true,
+      requiresBatteryNotLow: false,
+      requiresCharging: false,
+      requiresStorageNotLow: false,
+      requiresDeviceIdle: false,
+      requiredNetworkType: NetworkType.NONE
+  ), (String taskId) async {
+    // Get location and update Firestore here
+    LocationMonitor locationMonitor = LocationMonitor();
+    await locationMonitor.startMonitoring();
+    Position position = await Geolocator.getCurrentPosition();
+    locationMonitor.checkLocation(LatLng(position.latitude, position.longitude));
+    await locationMonitor.stopMonitoring();
+    BackgroundFetch.finish(taskId);
+  });
+
+  // Optional: Enable debug logs
+  BackgroundFetch.start().then((int status) {
+    print('[BackgroundFetch] start success: $status');
+  }).catchError((e) {
+    print('[BackgroundFetch] start FAILURE: $e');
+  });
 
   bool useDevicePreview = !kReleaseMode && kIsWeb;
 

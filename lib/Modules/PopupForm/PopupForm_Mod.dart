@@ -77,7 +77,9 @@ class _PopupFormModState extends State<PopupFormMod> {
         });
       }
     } catch (e) {
-      print('Error fetching word data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: GText('Error fetching word data: $e')),
+      );
     }
   }
 

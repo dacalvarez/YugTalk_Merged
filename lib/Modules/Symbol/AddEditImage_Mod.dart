@@ -11,10 +11,12 @@ import 'SearchSymbol_Mod.dart';
 class AddEditImage extends StatefulWidget {
   final String wordImage;
   final ValueChanged<String> onImageChanged;
+  final Function(String) showMessage;
 
   const AddEditImage({
     required this.wordImage,
     required this.onImageChanged,
+    required this.showMessage,
   });
 
   @override
@@ -96,6 +98,7 @@ class _AddEditImageState extends State<AddEditImage> {
         ],
       ),
     );
+    _showSuccessMessage('Image Deleted Successfully');
   }
 
   void _clearImage() {
@@ -138,6 +141,7 @@ class _AddEditImageState extends State<AddEditImage> {
     });
     widget.onImageChanged(_currentImage);
     Navigator.pop(context); // Close the dialog after saving
+    _showSuccessMessage('Image Saved Successfully');
   }
 
   void _navigateToSearch() {
@@ -147,6 +151,15 @@ class _AddEditImageState extends State<AddEditImage> {
       });
       _saveImage(); // Save the image directly
     });
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
@@ -331,10 +344,17 @@ class _AddEditImageState extends State<AddEditImage> {
   }
 }
 
-void showAddEditImageDialog(BuildContext context, String wordImage, ValueChanged<String> onImageChanged) {
+void showAddEditImageDialog(
+    BuildContext context,
+    String wordImage,
+    ValueChanged<String> onImageChanged
+    ) {
   showDialog(
     context: context,
     barrierDismissible: false, // Prevent dismissing by tapping outside
-    builder: (context) => AddEditImage(wordImage: wordImage, onImageChanged: onImageChanged),
+    builder: (context) => AddEditImage(
+      wordImage: wordImage,
+      onImageChanged: onImageChanged,
+      showMessage: (String) { 'Image Edited Successfully'; },),
   );
 }
