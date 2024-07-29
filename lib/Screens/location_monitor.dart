@@ -6,8 +6,39 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'global_snackbar.dart';
+
+class LocationData {
+  int counter;
+  DateTime? startTime;
+  DateTime? endTime;
+  Duration duration;
+
+  LocationData({
+    this.counter = 0,
+    this.startTime,
+    this.endTime,
+    this.duration = Duration.zero,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'counter': counter,
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+      'duration': duration.inSeconds,
+    };
+  }
+
+  factory LocationData.fromJson(Map<String, dynamic> json) {
+    return LocationData(
+      counter: json['counter'] as int,
+      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
+      duration: Duration(seconds: json['duration'] as int),
+    );
+  }
+}
 
 class LocationMonitor {
   static final LocationMonitor _instance = LocationMonitor._internal();
@@ -32,8 +63,11 @@ class LocationMonitor {
   };
   bool _isMonitoring = false;
   Map<String, DateTime> _lastNotificationTime = {};
-
+  Timer? _backgroundTimer;
+  Timer? _statsTimer;
+  final _statsController = StreamController<Map<String, Map<String, dynamic>>>.broadcast();
   Stream<String> get locationStream => _locationController.stream;
+  Stream<Map<String, Map<String, dynamic>>> get statsStream => _statsController.stream;
 
   void _showNotification(String locationType, bool isInside) {
     DateTime now = DateTime.now();
@@ -44,9 +78,22 @@ class LocationMonitor {
           : "You've left the $locationType area";
       GlobalSnackBar.show(message);
       _lastNotificationTime[locationType] = now;
+      _locationController.add(message);
     }
   }
 
+  Map<String, Map<String, dynamic>> getLocationStats() {
+    Map<String, Map<String, dynamic>> stats = {};
+    _locationData.forEach((locationType, data) {
+      stats[locationType] = {
+        'counter': data.counter,
+        'duration': data.duration.inSeconds,
+        'startTime': data.startTime?.toIso8601String(),
+        'endTime': data.endTime?.toIso8601String(),
+      };
+    });
+    return stats;
+  }
 
   Future<bool> _checkLocationPermission() async {
     bool serviceEnabled;
@@ -72,36 +119,43 @@ class LocationMonitor {
     return true;
   }
 
-
   Future<void> startMonitoring() async {
     if (_isMonitoring) return;
 
     bool permissionGranted = await _checkLocationPermission();
     if (!permissionGranted) {
+      print('Location permission not granted');
       return;
     }
 
     _isMonitoring = true;
-
-    // Load persisted data before starting the monitoring
     await _loadPersistedData();
-
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (serviceEnabled) {
-      await _startPositionStream();
-    }
-
-    if (!kIsWeb) {
-      _serviceStatusStream =
-          Geolocator.getServiceStatusStream().listen((ServiceStatus status) {
-            if (status == ServiceStatus.enabled) {
-              _startPositionStream();
-            } else {
-              _stopPositionStream();
-            }
-          });
-    }
+    _startBackgroundUpdates();
+    _startStatsUpdates();
   }
+
+  void _startStatsUpdates() {
+    _statsTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+      _statsController.add(getLocationStats());
+    });
+  }
+
+  void _startBackgroundUpdates() {
+    _backgroundTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
+      print('Background update triggered at ${DateTime.now()}');
+      Position position = await Geolocator.getCurrentPosition();
+      print('Current position: ${position.latitude}, ${position.longitude}');
+      checkLocation(LatLng(position.latitude, position.longitude));
+    });
+  }
+
+  Future<void> stopMonitoring() async {
+    _isMonitoring = false;
+    _backgroundTimer?.cancel();
+    _statsTimer?.cancel();
+    await _statsController.close();
+  }
+
 
   Future<void> _startPositionStream() async {
     await _stopPositionStream();
@@ -128,44 +182,13 @@ class LocationMonitor {
     }
   }
 
-  Future<void> stopMonitoring() async {
-    _isMonitoring = false;
-    if (_serviceStatusStream != null) {
-      await _serviceStatusStream!.cancel();
-      _serviceStatusStream = null;
-    }
-    await _stopPositionStream();
-  }
-
   void updateLocations(Map<String, dynamic> userLocations) {
     _locations.clear();
     userLocations.forEach((locationType, encodedLocations) {
       List<Map<String, dynamic>> decodedLocations = _decodeLocations(encodedLocations);
       _locations[locationType] = decodedLocations;
-      _isInside[locationType] = false;
+      _lastLocationState[locationType] = false;
     });
-
-    DateTime timestamp = DateTime.now();
-    _saveEncryptedData(timestamp);
-  }
-
-  void _saveEncryptedData(DateTime timestamp) {
-    Map<String, dynamic> dataToSave = {
-      'currentLocation': _currentLocationData['currentLocation'] ?? {},
-      'Home': _currentLocationData['Home'] ?? {},
-      'School': _currentLocationData['School'] ?? {},
-      'Clinic': _currentLocationData['Clinic'] ?? {},
-      'timestamp': timestamp.toUtc().millisecondsSinceEpoch,
-    };
-    String jsonString = json.encode(dataToSave);
-    print('Data to save: $jsonString');
-    String encryptedData = _encryptData(jsonString);
-    FirebaseFirestore.instance
-        .collection('currentLocation')
-        .doc(FirebaseAuth.instance.currentUser!.email)
-        .set({
-      'currentLocation': encryptedData,
-    }, SetOptions(merge: true));
   }
 
   Future<void> _persistData() async {
@@ -174,16 +197,15 @@ class LocationMonitor {
     _locationData.forEach((key, value) {
       dataToSave[key] = value.toJson();
     });
-    String encryptedData = _encryptData(json.encode(dataToSave));
-    await prefs.setString('locationData', encryptedData);
+    String jsonData = json.encode(dataToSave);
+    await prefs.setString('locationData', jsonData);
   }
 
   Future<void> _loadPersistedData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? encryptedData = prefs.getString('locationData');
-    if (encryptedData != null) {
-      String decryptedData = _decryptData(encryptedData);
-      Map<String, dynamic> loadedData = json.decode(decryptedData);
+    String? jsonData = prefs.getString('locationData');
+    if (jsonData != null) {
+      Map<String, dynamic> loadedData = json.decode(jsonData);
       loadedData.forEach((key, value) {
         _locationData[key] = LocationData.fromJson(value);
       });
@@ -194,18 +216,21 @@ class LocationMonitor {
     try {
       Map<String, dynamic> dataToUpload = {};
       _locationData.forEach((key, value) {
-        dataToUpload[key] = value.toJson();
+        String encryptedData = _encryptLocationData(value.toJson());
+        dataToUpload[key] = encryptedData;
       });
-      String encryptedData = _encryptData(json.encode(dataToUpload));
 
       await FirebaseFirestore.instance
-          .collection('locationStats')
+          .collection('userSettings')
           .doc(FirebaseAuth.instance.currentUser!.email)
           .set({
-        'encryptedLocationData': encryptedData,
+        'locationCounters': dataToUpload
       }, SetOptions(merge: true));
+
+      print('Successfully uploaded encrypted location data to Firestore: ${DateTime.now()}');
+      print('Uploaded data: $dataToUpload');
     } catch (e) {
-      print('Error uploading location data: $e');
+      print('Error uploading encrypted location data: $e');
     }
   }
 
@@ -261,8 +286,8 @@ class LocationMonitor {
   }
 
   void checkLocation(LatLng currentLocation) {
+    print('Checking location: ${currentLocation.latitude}, ${currentLocation.longitude}');
     _locations.forEach((locationType, locationList) {
-      bool wasInside = _isInside[locationType] ?? false;
       bool isNowInside = false;
 
       for (var location in locationList) {
@@ -272,51 +297,60 @@ class LocationMonitor {
         );
         double distance = calculateDistance(currentLocation, locationLatLng);
 
+        print('Distance to $locationType: $distance meters');
+
         if (distance <= RADIUS_METERS) {
           isNowInside = true;
           break;
         }
       }
 
-      if (!wasInside && isNowInside) {
-        _isInside[locationType] = true;
-        _updateLocationData(locationType, true);
-        _showNotification(locationType, true);
-      } else if (wasInside && !isNowInside) {
-        _isInside[locationType] = false;
-        _updateLocationData(locationType, false);
-        _showNotification(locationType, false);
-      }
+      _updateLocationData(locationType, isNowInside);
     });
-  }
-
-  void _updateLocationData(String locationType, bool isEntering) {
-    DateTime now = DateTime.now();
-    LocationData data = _locationData[locationType]!;
-
-    if (isEntering) {
-      data.counter++;
-      data.startTime = now;
-      data.endTime = null;
-    } else {
-      data.endTime = now;
-      if (data.startTime != null) {
-        data.duration += now.difference(data.startTime!);
-      }
-    }
 
     _persistData();
     _uploadDataToFirestore();
   }
 
+  void _updateLocationData(String locationType, bool isInside) {
+    DateTime now = DateTime.now();
+    LocationData data = _locationData[locationType]!;
+
+    if (isInside) {
+      if (data.startTime == null) {
+        data.counter++;
+        data.startTime = now;
+        print('Started visit to $locationType. Counter: ${data.counter}');
+      } else {
+        // Update duration even if already inside
+        data.duration = now.difference(data.startTime!);
+        print('Continuing visit to $locationType. Current duration: ${data.duration}');
+      }
+      data.endTime = now; // Always update end time while inside
+    } else {
+      if (data.startTime != null) {
+        // If we were inside but now we're not, finalize this visit
+        data.endTime = now;
+        data.duration = now.difference(data.startTime!);
+        print('Ended visit to $locationType. Total duration: ${data.duration}');
+        data.startTime = null;
+      }
+    }
+
+    // Print current state for debugging
+    print('$locationType - Counter: ${data.counter}, Start: ${data.startTime}, End: ${data.endTime}, Duration: ${data.duration}');
+  }
+
   String _encryptLocationData(Map<String, dynamic> data) {
     String jsonString = json.encode(data);
-    return _encryptData(jsonString);
+    List<int> bytes = utf8.encode(jsonString);
+    return base64Url.encode(bytes);
   }
 
   Map<String, dynamic> _decryptLocationData(String encryptedData) {
-    String decryptedJson = _decryptData(encryptedData);
-    return json.decode(decryptedJson);
+    List<int> bytes = base64Url.decode(encryptedData);
+    String jsonString = utf8.decode(bytes);
+    return json.decode(jsonString);
   }
 
   Future<Map<String, dynamic>> getLocationData() async {
@@ -357,71 +391,42 @@ class LocationMonitor {
   Future<void> loadLocationCounters() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('userSettings')
+          .collection('locationCounters')
           .doc(FirebaseAuth.instance.currentUser!.email)
           .get();
 
       Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
-      Map<String, dynamic>? counters = data?['locationCounters'] as Map<String, dynamic>?;
 
-      if (counters != null) {
-        _locationCounters = Map<String, int>.from(counters);
+      if (data != null) {
+        data.forEach((key, value) {
+          Map<String, dynamic> decryptedData = _decryptLocationData(value as String);
+          _locationData[key] = LocationData.fromJson(decryptedData);
+        });
 
         // Print the loaded counters
         print('Loaded Location Counters:');
-        _locationCounters.forEach((type, count) {
-          print('$type: $count');
+        _locationData.forEach((type, data) {
+          print('$type: ${data.counter}');
         });
       }
     } catch (e) {
-      print('Error loading location counters: $e');
+      print('Error loading encrypted location counters: $e');
     }
   }
 }
 
-  List<Map<String, dynamic>> _decodeLocations(String encodedLocations) {
-    List<int> bytes = base64Url.decode(encodedLocations);
-    String jsonString = utf8.decode(bytes);
-    return (json.decode(jsonString) as List).cast<Map<String, dynamic>>();
-  }
+List<Map<String, dynamic>> _decodeLocations(String encodedLocations) {
+  List<int> bytes = base64Url.decode(encodedLocations);
+  String jsonString = utf8.decode(bytes);
+  return (json.decode(jsonString) as List).cast<Map<String, dynamic>>();
+}
 
-  double calculateDistance(LatLng point1, LatLng point2) {
-    return Geolocator.distanceBetween(
-      point1.latitude,
-      point1.longitude,
-      point2.latitude,
-      point2.longitude,
-    );
-  }
 
-class LocationData {
-  int counter;
-  DateTime? startTime;
-  DateTime? endTime;
-  Duration duration;
-
-  LocationData({
-    this.counter = 0,
-    this.startTime,
-    this.endTime,
-    this.duration = Duration.zero,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'counter': counter,
-      'startTime': startTime?.toIso8601String(),
-      'endTime': endTime?.toIso8601String(),
-      'duration': duration.inSeconds,
-    };
-  }
-
-  factory LocationData.fromJson(Map<String, dynamic> json) {
-    return LocationData(
-      counter: json['counter'],
-      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
-      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
-      duration: Duration(seconds: json['duration']),
-    );
-  }
+double calculateDistance(LatLng point1, LatLng point2) {
+  return Geolocator.distanceBetween(
+    point1.latitude,
+    point1.longitude,
+    point2.latitude,
+    point2.longitude,
+  );
 }

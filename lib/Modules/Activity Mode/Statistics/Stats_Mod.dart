@@ -1120,11 +1120,98 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
   List<Map<String, dynamic>> filteredItems = [];
   List<Map<String, dynamic>> allItems = [];
   bool isLoading = true;
+  StreamSubscription<DocumentSnapshot>? _locationDataSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadItems();
+  }
+
+  @override
+  void dispose() {
+    _cancelSubscription();
+    super.dispose();
+  }
+
+  void _cancelSubscription() {
+    _locationDataSubscription?.cancel();
+    _locationDataSubscription = null;
+  }
+
+  void _subscribeToLocationData() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.email != null) {
+      _locationDataSubscription = FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(user.email)
+          .snapshots()
+          .listen((snapshot) {
+        if (!mounted) {
+          _cancelSubscription();
+          return;
+        }
+        if (snapshot.exists) {
+          final userLocations = snapshot.data()?['userLocations'] as Map<String, dynamic>?;
+          final locationCounters = snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
+          if (userLocations != null && locationCounters != null) {
+            _processLocationData(userLocations, locationCounters);
+          }
+        }
+      }, onError: (error) {
+        print('Error in location data stream: $error');
+        _safeSetState(() {
+          isLoading = false;
+        });
+      });
+    } else {
+      _safeSetState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _processLocationData(Map<String, dynamic> userLocations, Map<String, dynamic> locationCounters) {
+    List<Map<String, dynamic>> locationData = [];
+
+    userLocations.forEach((locationType, encodedLocations) {
+      String decodedValue = utf8.decode(base64.decode(encodedLocations));
+      List<dynamic> decodedJson = jsonDecode(decodedValue);
+
+      for (var location in decodedJson) {
+        String address = location['address'];
+
+        String? encryptedData = locationCounters[locationType];
+        Map<String, dynamic> locationStats = {};
+
+        if (encryptedData != null) {
+          String decryptedJson = _decryptData(encryptedData);
+          locationStats = json.decode(decryptedJson);
+        }
+
+        Map<String, dynamic> item = {
+          'type': locationType,
+          'address': address,
+          'counter': locationStats['counter'] ?? 0,
+          'startTime': _formatDateTime(locationStats['startTime'] ?? 'N/A'),
+          'endTime': _formatDateTime(locationStats['endTime'] ?? 'N/A'),
+          'duration': locationStats['duration'] ?? 'N/A',
+        };
+        locationData.add(item);
+      }
+    });
+
+    _safeSetState(() {
+      allItems = locationData;
+      filteredItems = _filterItems();
+      isLoading = false;
+    });
+  }
+
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
   }
 
   String _decryptData(String encryptedData) {
@@ -1142,8 +1229,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
   // Add a caching mechanism
   Future<void> _loadItems() async {
+    if (!mounted) return;
     setState(() {
-      isLoading = true; // Set loading to true when starting to load items
+      isLoading = true;
     });
 
     if (widget.title == 'Words') {
@@ -1166,7 +1254,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         filteredItems = allItems;
       });
     } else if (widget.title == 'Locations') {
-      try {
+      _subscribeToLocationData();
+      /*try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null && user.email != null) {
           // Fetch userSettings to get userLocations
@@ -1181,7 +1270,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           if (userLocations != null) {
             // Fetch currentLocation data
             final currentLocationDoc = await FirebaseFirestore.instance
-                .collection('currentLocation')
+                .collection('locationCounters')
                 .doc(user.email)
                 .get();
 
@@ -1227,7 +1316,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         }
       } catch (e) {
         print('Error fetching location data: $e');
-      }
+      }*/
     } else if (widget.title == 'Activities') {
       List<Map<String, String>> userForms = await _fetchUserForms();
       setState(() {

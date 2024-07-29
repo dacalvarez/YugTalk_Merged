@@ -132,6 +132,7 @@ class App extends StatelessWidget {
   }
 }
 
+//main.dart:
 class UserSettingsWrapper extends StatefulWidget {
   final User user;
 
@@ -151,22 +152,22 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
     //_loadData();
   }
 
-  void _setupLocationMonitoring() {
+  void _setupLocationMonitoring() async {
     _locationMonitor.locationStream.listen((message) {
       _scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: GText(message)),
       );
     });
 
-    _locationMonitor.startMonitoring();
+    await _locationMonitor.startMonitoring();
   }
 
-  Future<void> _loadData() async {
+  /*Future<void> _loadData() async {
     await _locationMonitor.loadLocationCounters();
     await _locationMonitor.loadLocationData();
     await _locationMonitor.loadEncryptedData();
     await _locationMonitor.startMonitoring();
-  }
+  }*/
 
   @override
   void dispose() {
