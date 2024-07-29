@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -114,6 +115,11 @@ class LocationMonitor {
 
     if (permission == LocationPermission.deniedForever) {
       return false;
+    }
+
+    if (Platform.isIOS) {
+      LocationPermission permission = await Geolocator.requestPermission();
+      return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
     }
 
     return true;
@@ -305,13 +311,18 @@ class LocationMonitor {
         }
       }
 
+      // Check if the state has changed
+      if (isNowInside != (_isInside[locationType] ?? false)) {
+        _showNotification(locationType, isNowInside);
+        _isInside[locationType] = isNowInside;
+      }
+
       _updateLocationData(locationType, isNowInside);
     });
 
     _persistData();
     _uploadDataToFirestore();
   }
-
   void _updateLocationData(String locationType, bool isInside) {
     DateTime now = DateTime.now();
     LocationData data = _locationData[locationType]!;

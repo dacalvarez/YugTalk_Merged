@@ -132,7 +132,7 @@ class App extends StatelessWidget {
   }
 }
 
-//main.dart:
+//inside main.dart:
 class UserSettingsWrapper extends StatefulWidget {
   final User user;
 
