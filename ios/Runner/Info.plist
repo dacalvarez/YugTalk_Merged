@@ -63,7 +63,7 @@
     <string>MyApp does not need this permission</string>
     <key>NSContactsUsageDescription</key>
     <string>MyApp does not need this permission</string>
-	<key>NSCameraUsageDescription</key>
+
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
     <dict>
       <key>BackgroundPreciseLocation</key>
@@ -71,10 +71,7 @@
     </dict>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app needs access to location when open and in the background.</string>
-    <key>UIBackgroundModes</key>
-    <array>
-      <string>location</string>
-    </array>
+    <key>NSCameraUsageDescription</key>
 	<string>We need access to the camera for uploading profile photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
     <string>This app needs access to microphone for audio recording.</string>
