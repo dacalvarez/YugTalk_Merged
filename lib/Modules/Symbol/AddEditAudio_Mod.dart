@@ -249,7 +249,6 @@ class _AddEditAudioState extends State<AddEditAudio> {
                   .doc(widget.symbolId)
                   .update({'wordAudio': ''});
             } catch (firestoreError) {
-              print('Failed to update Firestore: $firestoreError');
               _showError('Failed to update Firestore: $firestoreError');
               // If the document doesn't exist, we can ignore this error
               if (firestoreError is! FirebaseException || firestoreError.code != 'not-found') {

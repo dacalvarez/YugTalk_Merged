@@ -45,8 +45,17 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
         });
       }
     } catch (e) {
-      print("Error fetching board details: $e");
+      _showErrorMessage('Error fetching board details: $e');
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<List<Map<String, dynamic>>> _fetchSymbols() async {
@@ -78,7 +87,7 @@ class _EditBoard_ModState extends State<EditBoard_Mod> {
             };
       }).toList();
     } catch (e) {
-      print("Error fetching symbols: $e");
+      _showErrorMessage('Error fetching symbols: $e');
       return [];
     }
   }

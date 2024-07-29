@@ -1159,7 +1159,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           }
         }
       }, onError: (error) {
-        print('Error in location data stream: $error');
+        _showErrorMessage('Error in location data stream: $error');
         _safeSetState(() {
           isLoading = false;
         });
@@ -1169,6 +1169,15 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         isLoading = false;
       });
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _processLocationData(Map<String, dynamic> userLocations, Map<String, dynamic> locationCounters) {
@@ -1365,7 +1374,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
       return boards;
     } catch (e) {
-      print('Error fetching user boards: $e');
+      _showErrorMessage('Error fetching user boards: $e');
       return [];
     }
   }
@@ -1424,7 +1433,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
       return forms;
     } catch (e) {
-      print('Error fetching user forms: $e');
+      _showErrorMessage('Error fetching user forms: $e');
       return [];
     }
   }
@@ -1480,7 +1489,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
 
       return wordData;
     } catch (e) {
-      print('Error fetching word usages: $e');
+      _showErrorMessage('Error fetching word usages: $e');
       return [];
     }
   }
@@ -1540,7 +1549,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       }
     } catch (e) {
-      print('Error parsing date: $e');
+      _showErrorMessage('Error parsing date: $e');
     }
 
     if (dateTime == null) return 'Invalid Date';

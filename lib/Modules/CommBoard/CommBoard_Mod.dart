@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:gtext/gtext.dart';
 import './SymbolPlayer_Mod.dart';
 import './BoardDisplay_Mod.dart';
 import '/Screens/LinkedBoard_Screen.dart';
@@ -61,8 +62,17 @@ class _CommBoard_ModState extends State<CommBoard_Mod> {
             .delete();
       }
     } catch (e) {
-      print('Error fetching board language: $e');
+      _showErrorMessage('Error fetching board language: $e');
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
   
   void onSymbolSelected(Map<String, String> symbolData) {

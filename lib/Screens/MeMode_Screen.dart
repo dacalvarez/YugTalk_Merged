@@ -63,8 +63,17 @@ class _MeModeState extends State<MeMode> {
         _showSelectBoardDialog();
       }
     } catch (e) {
-      print("Error fetching boards: $e");
+      _showErrorMessage('Error fetching boards: $e');
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<void> fetchBoardLanguage(String boardID) async {
@@ -76,7 +85,7 @@ class _MeModeState extends State<MeMode> {
         });
       }
     } catch (e) {
-      print('Error fetching board language: $e');
+      _showErrorMessage('Error fetching board language: $e');
     }
   }
 

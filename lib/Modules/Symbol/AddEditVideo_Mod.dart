@@ -48,8 +48,8 @@ class _AddEditVideoState extends State<AddEditVideo> {
 
       final videoFile = File(file.path);
       final videoDuration = await _getVideoDuration(videoFile);
-      if (videoDuration > const Duration(seconds: 5)) {
-        _showErrorDialog('The selected video exceeds the 5-second limit.');
+      if (videoDuration > const Duration(seconds: 7)) {
+        _showErrorDialog('The selected video exceeds the 7-second limit.');
         return;
       }
 
@@ -102,7 +102,7 @@ class _AddEditVideoState extends State<AddEditVideo> {
         deleteOrigin: false,
         includeAudio: true,
         frameRate: 24,
-        duration: 5,
+        duration: 7,
       );
 
       print("Compressed video path: ${info?.file?.path}");
@@ -244,9 +244,6 @@ class _AddEditVideoState extends State<AddEditVideo> {
             onPressed: () {
               widget.onVideoChanged(_currentVideo);
               Navigator.pop(context);
-              if (_currentVideo.isNotEmpty) {
-                _showSuccessMessage('Video successfully ${widget.wordVideo.isEmpty ? 'added' : 'updated'}');
-              }
             },
             child: GText('Save'),
           ),

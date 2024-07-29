@@ -182,10 +182,9 @@ class _PopupFormModState extends State<PopupFormMod> {
                               "Content-Type": "image/jpeg",
                             },
                             errorBuilder: (context, error, stackTrace) {
-                              print('Error loading image: $error');
                               return Center(
-                                child: Text(
-                                  'Error loading image',
+                                child: GText(
+                                  'Error loading image: $error',
                                   style: TextStyle(color: textColor),
                                 ),
                               );

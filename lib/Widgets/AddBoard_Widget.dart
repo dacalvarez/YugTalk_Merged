@@ -62,7 +62,6 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
       querySnapshot.docs.map((doc) => int.parse(doc.id)).toList();
       return ids.isEmpty ? 1 : ids.reduce((a, b) => a > b ? a : b) + 1;
     } catch (e) {
-      print('Error fetching next document ID: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: GText('Failed to fetch next document ID: $e')),
       );
@@ -105,7 +104,6 @@ class _AddBoardWidgetState extends State<AddBoardWidget> {
         SnackBar(content: GText('Board Added Successfully')),
       );
     } catch (e) {
-      print('Error adding board: $e');
       ScaffoldMessenger.of(parentContext).showSnackBar(
         SnackBar(content: GText('Failed to add board: $e')),
       );

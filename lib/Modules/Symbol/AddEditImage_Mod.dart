@@ -73,8 +73,17 @@ class _AddEditImageState extends State<AddEditImage> {
         }
       }
     } catch (e) {
-      print('Error picking image: $e');
+      _showErrorMessage('Error picking image: $e');
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GText(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _confirmDeleteImage() {
