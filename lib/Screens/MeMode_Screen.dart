@@ -15,7 +15,7 @@ class MeMode extends StatefulWidget {
 
 class _MeModeState extends State<MeMode> {
   String? mainBoardID;
-  List<String> userOwnedBoards = [];
+  Map<String, String> userOwnedBoards = {}; // Map to store board IDs and names
   int lockButtonPressCount = 0;
   int hamburgerButtonPressCount = 0;
   final int requiredPressCount = 3;
@@ -41,39 +41,42 @@ class _MeModeState extends State<MeMode> {
           .where('isActivityBoard', isEqualTo: false)
           .get();
 
-      List<QueryDocumentSnapshot> ownedBoards = boardSnapshot.docs;
-      List<String> ownedBoardIDs = ownedBoards.map((doc) => doc.id).toList();
+      Map<String, String> ownedBoards = {};
+      for (var doc in boardSnapshot.docs) {
+        ownedBoards[doc.id] = doc['name'] ?? 'Unnamed Board';
+      }
+
       setState(() {
-        userOwnedBoards = ownedBoardIDs;
+        userOwnedBoards = ownedBoards;
       });
 
-      QuerySnapshot mainBoardSnapshot = await FirebaseFirestore.instance
-          .collection('board')
-          .where('ownerID', isEqualTo: userID)
-          .where('isMain', isEqualTo: true)
-          .where('isActivityBoard', isEqualTo: false)
-          .get();
-
-      if (mainBoardSnapshot.docs.isNotEmpty) {
+      if (userOwnedBoards.isEmpty) {
         setState(() {
-          mainBoardID = mainBoardSnapshot.docs.first.id;
+          mainBoardID = "1";
         });
-        fetchBoardLanguage(mainBoardSnapshot.docs.first.id);
       } else {
-        _showSelectBoardDialog();
+        QuerySnapshot mainBoardSnapshot = await FirebaseFirestore.instance
+            .collection('board')
+            .where('ownerID', isEqualTo: userID)
+            .where('isMain', isEqualTo: true)
+            .where('isActivityBoard', isEqualTo: false)
+            .get();
+
+        if (mainBoardSnapshot.docs.isNotEmpty) {
+          setState(() {
+            mainBoardID = mainBoardSnapshot.docs.first.id;
+          });
+          fetchBoardLanguage(mainBoardSnapshot.docs.first.id);
+        } else {
+          _showSelectBoardDialog();
+        }
       }
     } catch (e) {
-      _showErrorMessage('Error fetching boards: $e');
+      print("Error fetching boards: $e");
+      setState(() {
+        mainBoardID = "1";
+      });
     }
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: GText(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   Future<void> fetchBoardLanguage(String boardID) async {
@@ -85,7 +88,7 @@ class _MeModeState extends State<MeMode> {
         });
       }
     } catch (e) {
-      _showErrorMessage('Error fetching board language: $e');
+      print('Error fetching board language: $e');
     }
   }
 
@@ -94,21 +97,32 @@ class _MeModeState extends State<MeMode> {
       context: context,
       builder: (context) => AlertDialog(
         title: GText('Select Main Board'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: userOwnedBoards.map((boardID) {
-            return ListTile(
-              title: Text(boardID),
-              onTap: () {
-                setState(() {
-                  mainBoardID = boardID;
-                });
-                fetchBoardLanguage(boardID);
-                Navigator.of(context).pop();
-              },
-            );
-          }).toList(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: userOwnedBoards.entries.map((entry) {
+              return ListTile(
+                title: GText(entry.value), // Display board name
+                onTap: () {
+                  setState(() {
+                    mainBoardID = entry.key;
+                  });
+                  fetchBoardLanguage(entry.key);
+                  Navigator.of(context).pop();
+                },
+              );
+            }).toList(),
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Dismiss the dialog
+              Navigator.of(context).pop(); // Go back to the previous screen
+            },
+            child: GText('Cancel'),
+          ),
+        ],
       ),
     );
   }
@@ -214,7 +228,7 @@ class _MeModeState extends State<MeMode> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.more_vert),
             onPressed: _onHamburgerButtonPressed,
           ),
         ],

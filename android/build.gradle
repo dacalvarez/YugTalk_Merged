@@ -3,6 +3,9 @@ allprojects {
         google()
         mavenCentral()
         jcenter()
+        maven {
+            url "${project(':background_fetch').projectDir}/libs"
+        }
     }
 }
 

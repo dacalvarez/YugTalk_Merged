@@ -214,51 +214,82 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
             builder: (context, setState) {
               return AlertDialog(
                 title: GText('Edit Board'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    TextField(
-                      controller: _nameController,
-                      decoration:
-                      const InputDecoration(labelText: 'Board Name'),
-                    ),
-                    TextField(
-                      controller: _categoryController,
-                      decoration: const InputDecoration(labelText: 'Category'),
-                    ),
-                    TextField(
-                      controller: _rowsController,
-                      decoration: const InputDecoration(labelText: 'Rows'),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    TextField(
-                      controller: _columnsController,
-                      decoration: const InputDecoration(labelText: 'Columns'),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    const SizedBox(height: 16),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: GText('Language',
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Board Name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      TextFormField(
+                        controller: _categoryController,
+                        decoration: InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _rowsController,
+                              decoration: InputDecoration(
+                                labelText: 'Rows',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _columnsController,
+                              decoration: InputDecoration(
+                                labelText: 'Columns',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+                      GText('Language',
                           style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    Column(
-                      children: _languages.map((language) {
-                        return RadioListTile<String>(
-                          title: GText(language),
-                          value: language,
-                          groupValue: _selectedLanguage,
-                          onChanged: (String? value) {
-                            setState(() {
-                              _selectedLanguage = value;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
+                      SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: _languages.map((language) {
+                          return ChoiceChip(
+                            label: GText(language),
+                            selected: _selectedLanguage == language,
+                            onSelected: (bool selected) {
+                              setState(() {
+                                _selectedLanguage = selected ? language : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
                 ),
                 actions: <Widget>[
                   TextButton(
@@ -267,7 +298,7 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
                       Navigator.of(context).pop();
                     },
                   ),
-                  TextButton(
+                  ElevatedButton(
                     child: GText('Save'),
                     onPressed: () {
                       Navigator.of(context).pop();
@@ -490,7 +521,7 @@ class BoardsListWidgetState extends State<BoardsListWidget> {
           'rows': boardData['rows'],
           'columns': boardData['columns'],
           'language': boardData['language'],
-          'dateCreated': boardData['dateCreated'],
+          'dateCreated': Timestamp.now(),
         });
 
         final wordsCollection = boardDoc.reference.collection('words');

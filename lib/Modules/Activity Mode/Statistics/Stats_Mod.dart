@@ -65,78 +65,133 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
   String _selectedLocation = 'All Locations';
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
+  late Stream<QuerySnapshot> _boardStream;
+  Map<String, Map<String, int>> _wordUsageCounts = {};
+  List<StreamSubscription<QuerySnapshot>> _wordSubscriptions = [];
+  Map<String, String> _boardNames = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchWordUsageData();
+    _setupStreams();
   }
 
-  Future<void> _fetchWordUsageData() async {
+  void _setupStreams() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) return;
 
-    QuerySnapshot boardSnapshot = await FirebaseFirestore.instance
+    _boardStream = FirebaseFirestore.instance
         .collection('board')
         .where('ownerID', isEqualTo: user.email)
-        .where('isActivityBoard', isEqualTo: false)
-        .get();
+        .snapshots();
 
-    Map<String, Map<String, dynamic>> wordMap = {};
+    _boardStream.listen((boardSnapshot) {
+      for (var boardDoc in boardSnapshot.docs) {
+        String boardId = boardDoc.id;
+        String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+        _boardNames[boardId] = boardName;
+        _listenToWordChanges(boardId);
+      }
+      setState(() {});
+    });
+  }
 
-    for (var boardDoc in boardSnapshot.docs) {
-      String boardId = boardDoc.id;
-      String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+  void _listenToWordChanges(String boardId) {
+    FirebaseFirestore.instance
+        .collection('board')
+        .doc(boardId)
+        .collection('words')
+        .snapshots()
+        .listen((wordSnapshot) {
+      _updateWordCounts(boardId, wordSnapshot);
+    });
+  }
 
-      QuerySnapshot wordsSnapshot = await FirebaseFirestore.instance
-          .collection('board')
-          .doc(boardId)
-          .collection('words')
-          .get();
+  void _updateWordCounts(String boardId, QuerySnapshot wordSnapshot) {
+    _wordUsageCounts[boardId] = {};
 
-      for (var wordDoc in wordsSnapshot.docs) {
-        Map<String, dynamic> wordData = wordDoc.data() as Map<String, dynamic>;
+    for (var wordDoc in wordSnapshot.docs) {
+      if (wordDoc.id == 'placeholder') continue;
 
-        // Skip placeholder words
-        if (wordDoc.id == 'placeholder' || wordData['initialized'] == true) {
+      try {
+        Map<String, dynamic>? data = wordDoc.data() as Map<String, dynamic>?;
+        if (data == null) {
+          print('Warning: Document ${wordDoc.id} has null data');
           continue;
         }
 
-        String wordName = wordData['wordName'] as String? ?? 'Unnamed Word';
-        String wordCategory =
-            wordData['wordCategory'] as String? ?? 'Uncategorized';
-        int usageCount = wordData['usageCount'] as int? ?? 0;
+        int usageCount = data['usageCount'] as int? ?? 0;
+        String wordName =  data['wordName'] as String? ?? 'Unreadable';
+        String wordCategory = data['wordCategory'] as String? ?? 'Uncategorized';
 
-        if (!wordMap.containsKey(wordName)) {
-          wordMap[wordName] = {
-            'wordName': wordName,
-            'wordCategory': wordCategory,
-            'boardFrequencies': {},
-            'totalUsage': 0,
-          };
-        }
+        _wordUsageCounts[boardId]![wordName] = usageCount;
 
-        wordMap[wordName]!['boardFrequencies'][boardName] = usageCount;
-        wordMap[wordName]!['totalUsage'] =
-            (wordMap[wordName]!['totalUsage'] as int) + usageCount;
+        _updateWordLists(wordName, wordCategory, usageCount, boardId);
+      } catch (e) {
+        print('Error processing document ${wordDoc.id}: $e');
       }
     }
 
-    List<Map<String, dynamic>> allWords = wordMap.values.toList();
-    allWords.sort((a, b) => b['totalUsage'].compareTo(a['totalUsage']));
+    _recalculateTotals();
+  }
+
+  void _updateWordLists(String wordName, String wordCategory, int usageCount, String boardId) {
+    // Remove existing entries for this word
+    _mostUsedWords.removeWhere((word) => word['wordName'] == wordName);
+    _leastUsedWords.removeWhere((word) => word['wordName'] == wordName);
+
+    // Create new word entry
+    Map<String, dynamic> wordEntry = {
+      'wordName': wordName,
+      'wordCategory': wordCategory,
+      'totalUsage': usageCount,
+      'boardFrequencies': {boardId: usageCount},
+    };
+
+    // Add to appropriate list
+    if (usageCount >= 10) {
+      _mostUsedWords.add(wordEntry);
+    } else {
+      _leastUsedWords.add(wordEntry);
+    }
+
+    // Sort lists
+    _mostUsedWords.sort((a, b) => b['totalUsage'].compareTo(a['totalUsage']));
+    _leastUsedWords.sort((a, b) => a['totalUsage'].compareTo(b['totalUsage']));
+  }
+
+  void _recalculateTotals() {
+    int mostUsed = 0;
+    int leastUsed = 0;
+
+    _wordUsageCounts.forEach((boardId, words) {
+      words.forEach((wordId, count) {
+        if (count >= 10) {
+          mostUsed++;
+        } else {
+          leastUsed++;
+        }
+      });
+    });
 
     if (mounted) {
       setState(() {
-        _mostUsedWords = allWords
-            .where((word) => (word['totalUsage'] as int? ?? 0) >= 10)
-            .toList();
-        _leastUsedWords = allWords
-            .where((word) => (word['totalUsage'] as int? ?? 0) < 10)
-            .toList();
-        _mostUsedWordsCount = _mostUsedWords.length;
-        _leastUsedWordsCount = _leastUsedWords.length;
+        _mostUsedWordsCount = mostUsed;
+        _leastUsedWordsCount = leastUsed;
+        _isLoading = false;
       });
     }
+
+    print('Updated counts - Most Used: $_mostUsedWordsCount, Least Used: $_leastUsedWordsCount');
+  }
+
+
+  @override
+  void dispose() {
+    for (var subscription in _wordSubscriptions) {
+      subscription.cancel();
+    }
+    super.dispose();
   }
 
   @override
@@ -154,12 +209,12 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
               borderRadius: BorderRadius.circular(20.0),
             ),
             child: _isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator())
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildInfoIconButton(
-                        count: _mostUsedWords.length.toString(),
+                        count: _mostUsedWordsCount.toString(),
                         onPressed: () {
                           _showWordsDialog(context, _mostUsedWords);
                         },
@@ -167,7 +222,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
                         textColor: textColor,
                       ),
                       _buildInfoIconButton(
-                        count: _leastUsedWords.length.toString(),
+                        count: _leastUsedWordsCount.toString(),
                         onPressed: () {
                           _showWordsDialog(context, _leastUsedWords);
                         },
@@ -301,9 +356,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
                               cells: [
                                 DataCell(Text(word['wordName'] as String)),
                                 DataCell(Text(word['wordCategory'] as String)),
-                                DataCell(Text(_formatBoardFrequencies(
-                                    word['boardFrequencies']
-                                        as Map<String, dynamic>))),
+                                DataCell(Text(_formatBoardFrequencies(word['boardFrequencies'] as Map<String, int>))),
                                 DataCell(Text(word['totalUsage'].toString())),
                               ],
                             ))
@@ -331,7 +384,7 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
 
   String _formatBoardFrequencies(Map<String, dynamic> boardFrequencies) {
     return boardFrequencies.entries
-        .map((e) => "${e.key}: ${e.value}")
+        .map((e) => "${_boardNames[e.key] ?? 'Unknown Board'}: ${e.value}")
         .join(", ");
   }
 

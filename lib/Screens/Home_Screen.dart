@@ -24,9 +24,9 @@ class _Home_ModState extends State<Home_Mod>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController editModePasswordController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController activityModePasswordController =
-      TextEditingController();
+  TextEditingController();
   bool _passwordVisible = false;
   List<WordUsage> wordUsages = generateDummyData();
   int _wordCount = 0;
@@ -46,6 +46,66 @@ class _Home_ModState extends State<Home_Mod>
   int _mostUsedWordsCount = 0;
   int _leastUsedWordsCount = 0;
 
+// Add this method to the _Home_ModState class
+  Stream<List<Map<String, dynamic>>> getWordUsageStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return Stream.value([]);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('board')
+        .where('ownerID', isEqualTo: user.email)
+        .where('isActivityBoard', isEqualTo: false)
+        .snapshots()
+        .asyncMap((boardSnapshot) async {
+      Map<String, Map<String, dynamic>> wordMap = {};
+
+      for (var boardDoc in boardSnapshot.docs) {
+        String boardId = boardDoc.id;
+        String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+
+        QuerySnapshot wordsSnapshot = await FirebaseFirestore.instance
+            .collection('board')
+            .doc(boardId)
+            .collection('words')
+            .get();
+
+        for (var wordDoc in wordsSnapshot.docs) {
+          Map<String, dynamic> wordData =
+          wordDoc.data() as Map<String, dynamic>;
+
+          if (wordDoc.id == 'placeholder' || wordData['initialized'] == true) {
+            continue;
+          }
+
+          String wordName = wordData['wordName'] as String? ?? 'Unnamed Word';
+          String wordCategory =
+              wordData['wordCategory'] as String? ?? 'Uncategorized';
+          int usageCount = wordData['usageCount'] as int? ?? 0;
+
+          if (!wordMap.containsKey(wordName)) {
+            wordMap[wordName] = {
+              'wordName': wordName,
+              'wordCategory': wordCategory,
+              'boardFrequencies': {},
+              'totalUsage': 0,
+            };
+          }
+
+          wordMap[wordName]!['boardFrequencies'][boardName] = usageCount;
+          wordMap[wordName]!['totalUsage'] =
+              (wordMap[wordName]!['totalUsage'] as int) + usageCount;
+        }
+      }
+
+      List<Map<String, dynamic>> allWords = wordMap.values.toList();
+      allWords.sort((a, b) => b['totalUsage'].compareTo(a['totalUsage']));
+
+      return allWords;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,13 +122,17 @@ class _Home_ModState extends State<Home_Mod>
   @override
   void dispose() {
     _isMounted = false;
+    _cancelSubscription();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _cancelSubscription() {
     _boardSubscription?.cancel();
     _wordSubscriptions.values.forEach((subscription) => subscription.cancel());
     _userSettingsSubscription?.cancel();
     _pls5Subscription?.cancel();
     _briganceSubscription?.cancel();
-    _tabController.dispose();
-    super.dispose();
   }
 
   void _fetchData() {
@@ -83,7 +147,7 @@ class _Home_ModState extends State<Home_Mod>
 
     // Fetch location count
     final userSettingsRef =
-        FirebaseFirestore.instance.collection('userSettings').doc(user.email);
+    FirebaseFirestore.instance.collection('userSettings').doc(user.email);
     _userSettingsSubscription = userSettingsRef.snapshots().listen((snapshot) {
       if (snapshot.exists) {
         _updateLocationCount(snapshot.data());
@@ -315,9 +379,9 @@ class _Home_ModState extends State<Home_Mod>
 
   void _updateCounts(
       {int? boardCount,
-      int? wordCount,
-      int? locationCount,
-      int? activityCount}) {
+        int? wordCount,
+        int? locationCount,
+        int? activityCount}) {
     if (_isMounted) {
       setState(() {
         if (boardCount != null) _boardCount = boardCount;
@@ -351,10 +415,10 @@ class _Home_ModState extends State<Home_Mod>
           .get();
 
       QuerySnapshot<Map<String, dynamic>> guardianSnapshot =
-          await FirebaseFirestore.instance
-              .collection('guardian')
-              .where('password', isEqualTo: hashedPassword)
-              .get();
+      await FirebaseFirestore.instance
+          .collection('guardian')
+          .where('password', isEqualTo: hashedPassword)
+          .get();
 
       String userType;
       if (slpSnapshot.docs.isNotEmpty) {
@@ -461,7 +525,7 @@ class _Home_ModState extends State<Home_Mod>
             label,
             style: TextStyle(
                 fontSize:
-                    Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0,
+                Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0,
                 fontWeight: FontWeight.bold),
           ),
         ],
@@ -605,41 +669,27 @@ class _Home_ModState extends State<Home_Mod>
   }
 
   void _showDetailsDialog(BuildContext context, String title, int count) {
-    List<dynamic> items = [];
-    switch (title) {
-      case 'Words':
-        items = [..._mostUsedWords, ..._leastUsedWords];
-        break;
-      case 'Boards':
-        items = _filteredBoards
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
-        break;
-      case 'Most Used Words':
-        items = _mostUsedWords;
-        break;
-      case 'Least Used Words':
-        items = _leastUsedWords;
-        break;
-      case 'Locations':
-        _fetchLocationsData().then((locations) {
-          setState(() {
-            items = locations;
-          });
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return GeneralStatsDialog(title: title, items: items);
-            },
-          );
-        });
-        return;
-    }
+    Stream<List<Map<String, dynamic>>> wordStream = getWordUsageStream();
+
+    Stream<List<Map<String, dynamic>>> filteredStream = wordStream.map((words) {
+      switch (title) {
+        case 'Most Used Words':
+          return words
+              .where((word) => (word['totalUsage'] as int? ?? 0) >= 10)
+              .toList();
+        case 'Least Used Words':
+          return words
+              .where((word) => (word['totalUsage'] as int? ?? 0) < 10)
+              .toList();
+        default:
+          return words;
+      }
+    });
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return GeneralStatsDialog(title: title, items: items);
+        return WordUsageDialog(title: title, wordsStream: filteredStream);
       },
     );
   }
@@ -656,7 +706,7 @@ class _Home_ModState extends State<Home_Mod>
     if (!userSettingsSnapshot.exists) return [];
 
     Map<String, dynamic> data =
-        userSettingsSnapshot.data() as Map<String, dynamic>;
+    userSettingsSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> userLocations = data['userLocations'] ?? {};
 
     List<Map<String, dynamic>> locations = [];
@@ -761,7 +811,7 @@ class _Home_ModState extends State<Home_Mod>
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
           icon:
-              Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
+          Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
           onPressed: () {
             setState(() {
               _passwordVisible = !_passwordVisible;
@@ -774,11 +824,13 @@ class _Home_ModState extends State<Home_Mod>
   }
 }
 
+// Replace the entire WordUsageDialog class with this updated version
 class WordUsageDialog extends StatefulWidget {
   final String title;
-  final List<Map<String, dynamic>> words;
+  final Stream<List<Map<String, dynamic>>> wordsStream;
 
-  const WordUsageDialog({Key? key, required this.title, required this.words})
+  const WordUsageDialog(
+      {Key? key, required this.title, required this.wordsStream})
       : super(key: key);
 
   @override
@@ -787,181 +839,155 @@ class WordUsageDialog extends StatefulWidget {
 
 class _WordUsageDialogState extends State<WordUsageDialog> {
   String _searchQuery = '';
-  List<Map<String, dynamic>> _filteredWords = [];
   String? _selectedCategory;
   String? _selectedBoard;
 
-  @override
-  void initState() {
-    super.initState();
-    _filteredWords = widget.words;
-  }
-
-  void _filterWords() {
-    setState(() {
-      _filteredWords = widget.words.where((word) {
-        bool matchesSearch = (word['wordName']
-                    ?.toString()
-                    .toLowerCase()
-                    .contains(_searchQuery.toLowerCase()) ??
-                false) ||
-            (word['wordCategory']
-                    ?.toString()
-                    .toLowerCase()
-                    .contains(_searchQuery.toLowerCase()) ??
-                false);
-
-        bool matchesCategory = _selectedCategory == null ||
-            _selectedCategory == 'All' ||
-            word['wordCategory'] == _selectedCategory;
-
-        bool matchesBoard = _selectedBoard == null ||
-            _selectedBoard == 'All' ||
-            ((word['boardFrequencies'] as Map<dynamic, dynamic>?)
-                    ?.containsKey(_selectedBoard) ??
-                false);
-
-        return matchesSearch && matchesCategory && matchesBoard;
-      }).toList();
-    });
+  List<Map<String, dynamic>> _filterWords(List<Map<String, dynamic>> words) {
+    return words.where((word) {
+      bool matchesSearch = word['wordName']
+          .toString()
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      bool matchesCategory = _selectedCategory == null ||
+          _selectedCategory == 'All' ||
+          word['wordCategory'] == _selectedCategory;
+      bool matchesBoard = _selectedBoard == null ||
+          _selectedBoard == 'All' ||
+          ((word['boardFrequencies'] as Map<dynamic, dynamic>?)
+              ?.containsKey(_selectedBoard) ??
+              false);
+      return matchesSearch && matchesCategory && matchesBoard;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    Set<String> categories = {
-      'All',
-      ...widget.words
-          .map((w) => w['wordCategory'] as String? ?? 'Unknown')
-          .where((c) => c != null)
-    };
-    Set<String> boards = {
-      'All',
-      ...widget.words.expand((w) {
-        var boardFreqs = w['boardFrequencies'] as Map<dynamic, dynamic>?;
-        return boardFreqs?.keys.map((k) => k.toString()) ?? <String>[];
-      })
-    };
-
     return Dialog(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GText(widget.title,
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(16.0),
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: widget.wordsStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            List<Map<String, dynamic>> words = snapshot.data ?? [];
+            List<Map<String, dynamic>> filteredWords = _filterWords(words);
+
+            Set<String> categories = {
+              'All',
+              ...words
+                  .map((w) => w['wordCategory'] as String? ?? 'Unknown')
+                  .where((c) => c != null)
+            };
+            Set<String> boards = {
+              'All',
+              ...words.expand((w) {
+                var boardFreqs =
+                w['boardFrequencies'] as Map<dynamic, dynamic>?;
+                return boardFreqs?.keys.map((k) => k.toString()) ?? <String>[];
+              })
+            };
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GText("${widget.title} (${filteredWords.length})",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Search',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
                       ),
-                      onChanged: (value) {
-                        _searchQuery = value;
-                        _filterWords();
+                    ),
+                    SizedBox(width: 16),
+                    DropdownButton<String>(
+                      value: _selectedCategory,
+                      hint: GText('Category'),
+                      items: categories.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: GText(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedCategory = newValue;
+                        });
                       },
                     ),
+                    SizedBox(width: 16),
+                    DropdownButton<String>(
+                      value: _selectedBoard,
+                      hint: GText('Board'),
+                      items: boards.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: GText(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedBoard = newValue;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Expanded(
+                  child: filteredWords.isEmpty
+                      ? Center(child: GText('No data available'))
+                      : SingleChildScrollView(
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: GText('Word')),
+                        DataColumn(label: GText('Category')),
+                        DataColumn(label: GText('Boards & Frequencies')),
+                        DataColumn(label: GText('Total Usage')),
+                      ],
+                      rows: filteredWords.map((word) {
+                        List<String> boardFrequencies =
+                            (word['boardFrequencies']
+                            as Map<dynamic, dynamic>?)
+                                ?.entries
+                                .map((e) => '${e.key}: ${e.value}')
+                                .toList() ??
+                                [];
+                        return DataRow(
+                          cells: [
+                            DataCell(GText(word['wordName'] ?? '')),
+                            DataCell(GText(word['wordCategory'] ?? '')),
+                            DataCell(GText(boardFrequencies.join('\n'))),
+                            DataCell(GText(
+                                word['totalUsage']?.toString() ?? '0')),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  SizedBox(width: 16),
-                  DropdownButton<String>(
-                    value: _selectedCategory,
-                    hint: GText('Category'),
-                    items: categories.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: GText(value),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedCategory = newValue;
-                        _filterWords();
-                      });
-                    },
-                  ),
-                  SizedBox(width: 16),
-                  DropdownButton<String>(
-                    value: _selectedBoard,
-                    hint: GText('Board'),
-                    items: boards.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: GText(value),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedBoard = newValue;
-                        _filterWords();
-                      });
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Expanded(
-                child: _filteredWords.isEmpty
-                    ? Center(child: GText('No data available'))
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.vertical,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            columnSpacing: 16,
-                            headingRowHeight: 56,
-                            dataRowMinHeight: 52,
-                            columns: const [
-                              DataColumn(
-                                  label: GText('Word',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold))),
-                              DataColumn(
-                                  label: GText('Category',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold))),
-                              DataColumn(
-                                  label: GText('Boards & Frequencies',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold))),
-                              DataColumn(
-                                  label: GText('Total Usage',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold))),
-                            ],
-                            rows: _filteredWords.map((word) {
-                              List<String> boardFrequencies =
-                                  (word['boardFrequencies']
-                                              as Map<dynamic, dynamic>?)
-                                          ?.entries
-                                          .map((e) => '${e.key}: ${e.value}')
-                                          .toList() ??
-                                      [];
-                              return DataRow(
-                                cells: [
-                                  DataCell(GText(word['wordName'] ?? '')),
-                                  DataCell(GText(word['wordCategory'] ?? '')),
-                                  DataCell(GText(boardFrequencies.join('\n'))),
-                                  DataCell(GText(
-                                      word['totalUsage']?.toString() ?? '0')),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-              ),
-            ],
-          ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -986,11 +1012,205 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
   int _currentSortColumn = 0;
   bool _isAscending = true;
   int _rowsPerPage = 10;
+  StreamSubscription? _dataSubscription;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _filteredItems = List.from(widget.items);
+    _subscribeToData();
+  }
+
+  void _cancelSubscription() {
+    _dataSubscription?.cancel();
+    _dataSubscription = null;
+  }
+
+  @override
+  void dispose() {
+    _cancelSubscription();
+    super.dispose();
+  }
+
+  void _subscribeToData() {
+    _isLoading = true;
+    _cancelSubscription();
+
+    if (widget.title == 'Words' ||
+        widget.title == 'Most Used Words' ||
+        widget.title == 'Least Used Words') {
+      _dataSubscription = _subscribeToWordUsages();
+    } else if (widget.title == 'Boards') {
+      _dataSubscription = _subscribeToUserBoards();
+    } else if (widget.title == 'Locations') {
+      _dataSubscription = _subscribeToLocationData();
+    }
+  }
+
+  StreamSubscription _subscribeToWordUsages() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return Stream.empty().listen((_) {});
+    }
+
+    return FirebaseFirestore.instance
+        .collection('board')
+        .where('ownerID', isEqualTo: user.email)
+        .snapshots()
+        .listen((boardSnapshot) {
+      _processWordData(boardSnapshot.docs);
+    });
+  }
+
+  void _processWordData(List<QueryDocumentSnapshot> boardDocs) {
+    Map<String, Map<String, dynamic>> wordMap = {};
+
+    for (var boardDoc in boardDocs) {
+      String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+      boardDoc.reference.collection('words').get().then((wordsSnapshot) {
+        for (var wordDoc in wordsSnapshot.docs) {
+          Map<String, dynamic> wordData = wordDoc.data();
+          String wordName = wordData['wordName'] as String? ?? 'Unnamed Word';
+          String wordCategory =
+              wordData['wordCategory'] as String? ?? 'Uncategorized';
+          int usageCount = wordData['usageCount'] as int? ?? 0;
+
+          if (!wordMap.containsKey(wordName)) {
+            wordMap[wordName] = {
+              'wordName': wordName,
+              'wordCategory': wordCategory,
+              'boardFrequencies': {},
+              'totalUsage': 0,
+            };
+          }
+
+          wordMap[wordName]!['boardFrequencies'][boardName] = usageCount;
+          wordMap[wordName]!['totalUsage'] =
+              (wordMap[wordName]!['totalUsage'] as int) + usageCount;
+        }
+
+        _updateItems(wordMap.values.toList());
+      });
+    }
+  }
+
+  StreamSubscription _subscribeToUserBoards() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return Stream.empty().listen((_) {});
+    }
+
+    return FirebaseFirestore.instance
+        .collection('board')
+        .where('ownerID', isEqualTo: user.email)
+        .snapshots()
+        .listen((snapshot) {
+      List<Map<String, dynamic>> boards = snapshot.docs.map((doc) {
+        final boardData = doc.data();
+        return {
+          'id': doc.id,
+          'name': boardData['name'] ?? 'Unnamed Board',
+          'category': boardData['category'] ?? 'Uncategorized',
+        };
+      }).toList();
+      _updateItems(boards);
+    });
+  }
+
+  StreamSubscription _subscribeToLocationData() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      return Stream.empty().listen((_) {});
+    }
+
+    return FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(user.email)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final userLocations =
+        snapshot.data()?['userLocations'] as Map<String, dynamic>?;
+        final locationCounters =
+        snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
+        if (userLocations != null && locationCounters != null) {
+          _processLocationData(userLocations, locationCounters);
+        }
+      }
+    });
+  }
+
+  void _processLocationData(Map<String, dynamic> userLocations,
+      Map<String, dynamic> locationCounters) {
+    List<Map<String, dynamic>> locationData = [];
+
+    userLocations.forEach((locationType, encodedLocations) {
+      String decodedValue = utf8.decode(base64.decode(encodedLocations));
+      List<dynamic> decodedJson = jsonDecode(decodedValue);
+
+      for (var location in decodedJson) {
+        String address = location['address'];
+
+        String? encryptedData = locationCounters[locationType];
+        Map<String, dynamic> locationStats = {};
+
+        if (encryptedData != null) {
+          String decryptedJson = _decryptData(encryptedData);
+          locationStats = json.decode(decryptedJson);
+        }
+
+        Map<String, dynamic> item = {
+          'type': locationType,
+          'address': address,
+          'counter': locationStats['counter'] ?? 0,
+          'startTime': _formatDateTime(locationStats['startTime'] ?? 'N/A'),
+          'endTime': _formatDateTime(locationStats['endTime'] ?? 'N/A'),
+          'duration': locationStats['duration'] ?? 'N/A',
+        };
+        locationData.add(item);
+      }
+    });
+
+    _updateItems(locationData);
+  }
+
+  String _decryptData(String encryptedData) {
+    List<int> bytes = base64Url.decode(encryptedData);
+    return utf8.decode(bytes);
+  }
+
+  void _updateItems(List<dynamic> newItems) {
+    if (mounted) {
+      setState(() {
+        widget.items.clear();
+        widget.items.addAll(newItems);
+        _filteredItems = List.from(widget.items);
+        _filterItems();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatDateTime(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+
+    DateTime? dateTime;
+    try {
+      if (timestamp is Timestamp) {
+        dateTime = timestamp.toDate();
+      } else if (timestamp is String) {
+        dateTime = DateTime.tryParse(timestamp);
+      } else if (timestamp is int) {
+        dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      }
+    } catch (e) {
+      print('Error parsing date: $e');
+    }
+
+    if (dateTime == null) return 'Invalid Date';
+
+    return "${dateTime.month.toString().padLeft(2, '0')}/${dateTime.day.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}";
   }
 
   void _filterItems() {
@@ -1074,7 +1294,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         width: MediaQuery.of(context).size.width * 0.8,
         height: MediaQuery.of(context).size.height * 0.8,
         padding: EdgeInsets.all(16),
-        child: Column(
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GText(
@@ -1131,7 +1353,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
               child: SingleChildScrollView(
                 child: PaginatedDataTable(
                   columns: _getColumns(),
-                  source: _DataSource(context, _filteredItems, widget.title),
+                  source:
+                  _DataSource(context, _filteredItems, widget.title),
                   rowsPerPage: _rowsPerPage,
                   onRowsPerPageChanged: (value) {
                     setState(() {
@@ -1142,8 +1365,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
                   sortColumnIndex: _currentSortColumn,
                   sortAscending: _isAscending,
                   dataRowMaxHeight:
-                      (_DataSource(context, _filteredItems, widget.title)
-                          .rowHeight),
+                  (_DataSource(context, _filteredItems, widget.title)
+                      .rowHeight),
                 ),
               ),
             ),
@@ -1163,9 +1386,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) => _sort<String>(
-              (item) => item['wordCategory'], columnIndex, ascending),
+                  (item) => item['wordCategory'], columnIndex, ascending),
         ),
         DataColumn(
           label: GText('Boards', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1181,9 +1404,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) => _sort<String>(
-              (item) => item['wordCategory'], columnIndex, ascending),
+                  (item) => item['wordCategory'], columnIndex, ascending),
         ),
         DataColumn(
           label: GText('Boards & Frequencies',
@@ -1205,7 +1428,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) =>
               _sort<String>((item) => item['category'], columnIndex, ascending),
         ),
@@ -1216,7 +1439,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           label: Container(
             width: 600,
             child:
-                GText('Address', style: TextStyle(fontWeight: FontWeight.bold)),
+            GText('Address', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           onSort: (columnIndex, ascending) =>
               _sort<String>((item) => item['address'], columnIndex, ascending),
