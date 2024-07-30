@@ -32,6 +32,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v0.57
+          tag: v0.9
           overwrite: true
           body: "Test for sideloading"
