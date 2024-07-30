@@ -25,6 +25,7 @@ class _PopupFormModState extends State<PopupFormMod> {
   String wordAudio = '';
   String wordVideo = '';
   String wordImage = '';
+  String wordCategory = '';
   double _volume = 1.0;
   double _playbackSpeed = 1.0;
 
@@ -57,6 +58,7 @@ class _PopupFormModState extends State<PopupFormMod> {
           wordAudio = documentSnapshot['wordAudio'];
           wordVideo = documentSnapshot['wordVideo'];
           wordImage = documentSnapshot['wordImage'];
+          wordCategory = documentSnapshot['wordCategory'];
 
           if (wordVideo.isNotEmpty) {
             _videoPlayerController = VideoPlayerController.network(wordVideo)
@@ -96,13 +98,46 @@ class _PopupFormModState extends State<PopupFormMod> {
     }
   }
 
+  Color _getColorForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'nouns':
+        return const Color(0xffffb33f);
+      case 'pronouns':
+        return const Color(0xffffe682);
+      case 'verbs':
+        return const Color(0xff9ee281);
+      case 'adjectives':
+        return const Color(0xff69c8ff);
+      case 'prepositions':
+        return const Color(0xffff8cd2);
+      case 'social words':
+        return const Color(0xffff8cd2);
+      case 'questions':
+        return const Color(0xffa77dff);
+      case 'negations':
+        return const Color(0xffff5150);
+      case 'important words':
+        return const Color(0xffff5150);
+      case 'adverbs':
+        return const Color(0xffc19b84);
+      case 'conjunctions':
+        return const Color(0xffffffff);
+      case 'determiners':
+        return const Color(0xff464646);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getTextColorForCategory(String category) {
+    return category.toLowerCase() == 'determiners' ? Colors.black: Colors.white;
+  }
+
   @override
   Widget build(BuildContext context) {
-    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Color backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.grey.shade300;
-    Color borderColor = isDarkMode ? Colors.white : Colors.black;
-    Color innerBackgroundColor = isDarkMode ? Colors.black54 : Colors.white;
-    Color textColor = isDarkMode ? Colors.white : Colors.black;
+    Color backgroundColor = _getColorForCategory(wordCategory);
+    Color textColor = _getTextColorForCategory(wordCategory);
+    bool hasVideo = wordVideo.isNotEmpty && _videoPlayerController != null;
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -112,8 +147,12 @@ class _PopupFormModState extends State<PopupFormMod> {
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.80,
-          height: MediaQuery.of(context).size.height * 0.80,
+          width: hasVideo
+              ? MediaQuery.of(context).size.width * 0.80
+              : MediaQuery.of(context).size.width * 0.70,
+          height: hasVideo
+              ? MediaQuery.of(context).size.height * 0.80
+              : MediaQuery.of(context).size.height * 0.80,
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
@@ -125,138 +164,166 @@ class _PopupFormModState extends State<PopupFormMod> {
                 ),
               ),
               const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      height: MediaQuery.of(context).size.height * 0.35,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10.0),
-                        color: _videoPlayerController != null && _videoPlayerController!.value.isInitialized
-                            ? Colors.black
-                            : innerBackgroundColor,
-                        border: Border.all(color: borderColor, width: 2),
-                      ),
-                      child: _videoPlayerController != null &&
-                          _videoPlayerController!.value.isInitialized
-                          ? Stack(
-                        children: [
-                          GestureDetector(
-                            child: VideoPlayer(_videoPlayerController!),
-                          ),
-                          _buildControls(),
-                        ],
-                      )
-                          : Center(
-                        child: GText(
-                          'No video data',
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Column(
-                    children: [
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.17,
-                        width: MediaQuery.of(context).size.height * 0.17,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          color: innerBackgroundColor,
-                          border: Border.all(color: borderColor, width: 2),
-                        ),
-                        child: wordImage.isNotEmpty
-                            ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10.0),
-                          child: Image.network(
-                            wordImage,
-                            fit: BoxFit.cover,
-                            headers: const {
-                              "Content-Type": "image/jpeg",
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: GText(
-                                  'Error loading image: $error',
-                                  style: TextStyle(color: textColor),
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                            : Center(
-                          child: GText(
-                            'Symbol Container',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.17,
-                        width: MediaQuery.of(context).size.height * 0.17,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          color: innerBackgroundColor,
-                          border: Border.all(color: borderColor, width: 2),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.volume_up, color: textColor, size: 55),
-                          onPressed: _playAudio,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              _buildTopRow(),
               const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.height * 0.25,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: innerBackgroundColor,
-                  borderRadius: BorderRadius.circular(10.0),
-                  border: Border.all(color: borderColor, width: 2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      wordName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: GText(
-                          wordDesc.isNotEmpty ? wordDesc : 'No description for this symbol',
-                          style: TextStyle(
-                            fontStyle: wordDesc.isNotEmpty ? FontStyle.normal : FontStyle.italic,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildBottomContainer(textColor, hasVideo),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopRow() {
+    bool hasVideo = wordVideo.isNotEmpty && _videoPlayerController != null;
+    if (hasVideo) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: _buildVideoContainer(),
+          ),
+          const SizedBox(width: 20),
+          Column(
+            children: [
+              _buildSymbolContainer(isLarge: false),
+              const SizedBox(height: 10),
+              _buildSpeakerContainer(isLarge: false),
+            ],
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildSymbolContainer(isLarge: true),
+          const SizedBox(width: 20),
+          _buildSpeakerContainer(isLarge: true),
+        ],
+      );
+    }
+  }
+
+  Widget _buildVideoContainer() {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      height: MediaQuery.of(context).size.height * 0.35,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.0),
+        color: Colors.black,
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      child: Stack(
+        children: [
+          GestureDetector(
+            child: VideoPlayer(_videoPlayerController!),
+          ),
+          _buildControls(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSymbolContainer({required bool isLarge}) {
+    double size = isLarge
+        ? MediaQuery.of(context).size.height * 0.35
+        : MediaQuery.of(context).size.height * 0.17;
+
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.0),
+        color: Colors.white,
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      child: wordImage.isNotEmpty
+          ? ClipRRect(
+        borderRadius: BorderRadius.circular(10.0),
+        child: Image.network(
+          wordImage,
+          fit: BoxFit.cover,
+          headers: const {
+            "Content-Type": "image/jpeg",
+          },
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading image: $error');
+            return const Center(
+              child: GText(
+                'Error loading image',
+                style: TextStyle(color: Colors.black),
+              ),
+            );
+          },
+        ),
+      )
+          : const Center(
+        child: GText(
+          'Symbol Container',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeakerContainer({required bool isLarge}) {
+    double size = isLarge
+        ? MediaQuery.of(context).size.height * 0.35
+        : MediaQuery.of(context).size.height * 0.17;
+
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.0),
+        color: Colors.white,
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      child: IconButton(
+        icon: Icon(Icons.volume_up, color: Colors.black, size: isLarge ? 120 : 55),
+        onPressed: _playAudio,
+      ),
+    );
+  }
+
+  Widget _buildBottomContainer(Color textColor, bool hasVideo) {
+    return Container(
+      width: hasVideo ? double.infinity : MediaQuery.of(context).size.width * 0.6,
+      height: MediaQuery.of(context).size.height * 0.25,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.0),
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            wordName,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Text(
+                wordDesc.isNotEmpty ? wordDesc : 'No description for this symbol',
+                style: TextStyle(
+                  fontStyle: wordDesc.isNotEmpty ? FontStyle.normal : FontStyle.italic,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -299,7 +366,7 @@ class _PopupFormModState extends State<PopupFormMod> {
                     color: Colors.white,
                   ),
                   SizedBox(
-                    width: 100, // Shorten the slider
+                    width: 100,
                     child: Slider(
                       value: _volume,
                       min: 0.0,
