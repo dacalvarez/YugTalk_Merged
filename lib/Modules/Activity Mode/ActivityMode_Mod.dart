@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gtext/gtext.dart';
 import '../../Widgets/Drawer_Widget.dart';
+import 'Activities.dart';
 import 'Activity Boards/ActivityBoards_Mod.dart';
 import 'Activity Forms/ActivityForms_Mod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -35,7 +36,7 @@ class _ActivityMode_ModState extends State<ActivityMode_Mod>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _fetchCurrentUser();
   }
 
@@ -131,6 +132,27 @@ class _ActivityMode_ModState extends State<ActivityMode_Mod>
                     ),
                   ),
                 ),
+                Tab(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      _tabController.animateTo(3);
+                    },
+                    child: Container(
+                      decoration: const BoxDecoration(),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: GText(
+                          'Activities',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,6 +166,7 @@ class _ActivityMode_ModState extends State<ActivityMode_Mod>
           const Stats_Mod(),
           const ActivityForms_Mod(),
           ActivityBoards_Mod(userID: userID),
+          SpeechAssessmentScreen(),
         ],
       ),
     );

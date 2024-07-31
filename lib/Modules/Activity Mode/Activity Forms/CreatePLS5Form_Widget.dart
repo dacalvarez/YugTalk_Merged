@@ -79,10 +79,10 @@ class _CreatePLS5Form_WidgetState extends State<CreatePLS5Form_Widget> {
       textControllers = widget.initialData!.pls5Rows.map((row) {
         return [
           TextEditingController(text: row['Subsets/Score'] ?? ''),
-          TextEditingController(text: row['Standard Score (#)'] ?? ''),
-          TextEditingController(text: row['Percentile Rank (%)'] ?? ''),
+          TextEditingController(text: row['Standard Score (50 - 150)'] ?? ''),
+          TextEditingController(text: row['Percentile Rank (1 - 99%)'] ?? ''),
           TextEditingController(
-              text: row['Descriptive Range (average/below average)'] ?? ''),
+              text: row['Descriptive Range'] ?? ''),
         ];
       }).toList();
     } else {
@@ -327,11 +327,11 @@ class _CreatePLS5Form_WidgetState extends State<CreatePLS5Form_Widget> {
       sheet.getRangeByName('B11').setText(selectedActivityBoard);
 
       sheet.getRangeByName('A13').setText('Subsets/Score');
-      sheet.getRangeByName('B13').setText('Standard Score (#)');
-      sheet.getRangeByName('C13').setText('Percentile Rank (%)');
+      sheet.getRangeByName('B13').setText('Standard Score (50 - 150)');
+      sheet.getRangeByName('C13').setText('Percentile Rank (1 - 99%)');
       sheet
           .getRangeByName('D13')
-          .setText('Descriptive Range (average/below average)');
+          .setText('Descriptive Range');
       sheet.getRangeByName('A13:D13').cellStyle.hAlign = HAlignType.center;
       sheet.getRangeByName('A13:D13').cellStyle.bold = true;
       sheet.getRangeByName('A13:D13').cellStyle.borders.all.lineStyle =
@@ -410,10 +410,10 @@ class _CreatePLS5Form_WidgetState extends State<CreatePLS5Form_Widget> {
         pw.TableRow(
           children: [
             _buildTableHeaderCell('Subsets/Score', headerFont),
-            _buildTableHeaderCell('Standard Score (#)', headerFont),
-            _buildTableHeaderCell('Percentile Rank (%)', headerFont),
+            _buildTableHeaderCell('Standard Score (50 - 150)', headerFont),
+            _buildTableHeaderCell('Percentile Rank (1 - 99%)', headerFont),
             _buildTableHeaderCell(
-                'Descriptive Range\n(average/below average)', headerFont),
+                'Descriptive Range', headerFont),
           ],
         ),
         ...List.generate(
@@ -868,7 +868,7 @@ class _PLS5TableState extends State<PLS5Table> {
     super.initState();
     _initializeTextControllers();
     _initializeFocusNodes();
-    _initialFocusNode = widget.initialFocusNode ?? focusNodes[0][0];
+    _initialFocusNode = widget.initialFocusNode ?? focusNodes[0][1];
   }
 
   void _initializeFocusNodes() {
@@ -890,10 +890,10 @@ class _PLS5TableState extends State<PLS5Table> {
       textControllers = widget.initialData!.pls5Rows.map((row) {
         return [
           TextEditingController(text: row['Subsets/Score'] ?? ''),
-          TextEditingController(text: row['Standard Score (#)'] ?? ''),
-          TextEditingController(text: row['Percentile Rank (%)'] ?? ''),
+          TextEditingController(text: row['Standard Score (50 - 150)'] ?? ''),
+          TextEditingController(text: row['Percentile Rank (1 - 99%)'] ?? ''),
           TextEditingController(
-              text: row['Descriptive Range (average/below average)'] ?? ''),
+              text: row['Descriptive Range'] ?? ''),
         ];
       }).toList();
     } else {
@@ -948,7 +948,7 @@ class _PLS5TableState extends State<PLS5Table> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (focusNodes.isNotEmpty && focusNodes[0].isNotEmpty) {
-        FocusScope.of(context).requestFocus(focusNodes[0][0]);
+        FocusScope.of(context).requestFocus(focusNodes[0][1]);
       }
     });
   }
@@ -964,109 +964,175 @@ class _PLS5TableState extends State<PLS5Table> {
     super.dispose();
   }
 
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('PLS-5 Scoring Information'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Computation of Scores:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('1. Raw scores are obtained from the child\'s performance on various tasks in the assessment.'),
+                Text('2. These raw scores are converted to standard scores using age-based normative data.'),
+                Text('3. Standard scores are then used to determine percentile ranks and descriptive ranges.'),
+                SizedBox(height: 10),
+                Text('Complete Rubric Table:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Table(
+                  border: TableBorder.all(),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.2),
+                    1: FlexColumnWidth(1.2),
+                    2: FlexColumnWidth(1.5),
+                  },
+                  children: [
+                    TableRow(
+                      children: ['Standard Score', 'Percentile Rank', 'Descriptive Range']
+                          .map((header) => TableCell(
+                        child: Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Text(header, style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ))
+                          .toList(),
+                    ),
+                    ...[
+                      ['131 and above', '98 and above', 'Very Superior'],
+                      ['121 - 130', '92 - 97', 'Superior'],
+                      ['111 - 120', '76 - 91', 'Above Average'],
+                      ['90 - 110', '25 - 75', 'Average'],
+                      ['80 - 89', '9 - 24', 'Below Average'],
+                      ['70 - 79', '3 - 8', 'Poor'],
+                      ['69 and below', '2 and below', 'Very Poor'],
+                    ].map((row) => TableRow(
+                      children: row
+                          .map((cell) => TableCell(
+                        child: Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Text(cell),
+                        ),
+                      ))
+                          .toList(),
+                    )),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Text('Rubrics for Each Column:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('1. Standard Score:'),
+                Text('   - Mean: 100'),
+                Text('   - Standard Deviation: 15'),
+                Text('   - Range: Typically 50-150'),
+                Text('2. Percentile Rank:'),
+                Text('   - Range: 1-99'),
+                Text('   - Indicates the percentage of same-age peers scoring at or below this level'),
+                Text('3. Descriptive Range:'),
+                Text('   - Qualitative description of performance'),
+                Text('   - Based on standard score and percentile rank'),
+                SizedBox(height: 10),
+                Text('Rubric for the Entire Table:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('The table includes three main components:'),
+                Text('1. Auditory Comprehension (AC)'),
+                Text('2. Expressive Communication (EC)'),
+                Text('3. Total Language Score (TLS)'),
+                Text('Each of these is scored using the rubric provided above. The TLS is a composite score derived from AC and EC.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FocusScope(
-      node: FocusScopeNode(),
-      autofocus: true,
-      child: SingleChildScrollView(
-        child: Table(
-          border: TableBorder.all(color: Colors.black),
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          columnWidths: const {
-            0: FractionColumnWidth(0.25),
-            1: FractionColumnWidth(0.25),
-            2: FractionColumnWidth(0.25),
-            3: FractionColumnWidth(0.25),
-          },
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const TableRow(
+            Text('PLS-5 Table', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(width: 8),  // Add some space between the text and the icon
+            IconButton(
+              icon: Icon(Icons.info_outline),
+              onPressed: _showInfoDialog,
+              tooltip: 'PLS-5 Scoring Information',
+            ),
+          ],
+        ),
+        SizedBox(height: 10),
+        FocusScope(
+          node: FocusScopeNode(),
+          autofocus: true,
+          child: SingleChildScrollView(
+            child: Table(
+              border: TableBorder.all(color: Colors.black),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              columnWidths: const {
+                0: FractionColumnWidth(0.25),
+                1: FractionColumnWidth(0.25),
+                2: FractionColumnWidth(0.25),
+                3: FractionColumnWidth(0.25),
+              },
               children: [
-                TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(
-                      child: Text(
-                        'Subsets/Score',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
+                const TableRow(
+                  children: [
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Subsets/Score', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Standard Score (50 - 150)', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Percentile Rank (1 - 99%)', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Descriptive Range', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
+                  ],
                 ),
-                TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(
-                      child: Text(
-                        'Standard Score (#)',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                ),
-                TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(
-                      child: Text(
-                        'Percentile Rank (%)',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                ),
-                TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(
-                      child: Text(
-                        'Descriptive Range\n(average/below average)',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
+                ...List.generate(
+                  textControllers.length,
+                      (rowIndex) => TableRow(
+                    children: List.generate(
+                      textControllers[rowIndex].length,
+                          (colIndex) => TableCell(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Center(
+                            child: colIndex == 0
+                                ? Text(
+                              textControllers[rowIndex][colIndex].text,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 16),
+                            )
+                                : TextFormField(
+                              controller: textControllers[rowIndex][colIndex],
+                              focusNode: focusNodes[rowIndex][colIndex],
+                              autofocus: rowIndex == 0 && colIndex == 1,
+                              textAlign: TextAlign.center,
+                              maxLines: null,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.all(8.0),
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-            ...List.generate(
-              textControllers.length,
-                  (rowIndex) => TableRow(
-                children: List.generate(
-                  textControllers[rowIndex].length,
-                      (colIndex) => TableCell(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Center(
-                        child: TextFormField(
-                          controller: textControllers[rowIndex][colIndex],
-                          focusNode: focusNodes[rowIndex][colIndex],
-                          autofocus: rowIndex == 0 && colIndex == 0,
-                          textAlign: TextAlign.center,
-                          maxLines: null,
-                          decoration: const InputDecoration(
-                            contentPadding: EdgeInsets.all(8.0),
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -1386,9 +1452,9 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
     final tableData = widget.textControllers
         .map((textControllers) => {
       'Subsets/Score': textControllers[0].text,
-      'Standard Score (#)': textControllers[1].text,
-      'Percentile Rank (%)': textControllers[2].text,
-      'Descriptive Range (average/below average)':
+      'Standard Score (50 - 150)': textControllers[1].text,
+      'Percentile Rank (1 - 99%)': textControllers[2].text,
+      'Descriptive Range':
       textControllers[3].text,
     })
         .toList();
@@ -1663,9 +1729,9 @@ class _SavePrintButtonsState extends State<SavePrintButtons> {
         for (int i = 0; i < 4; i++) {
           String columnName = [
             'Subsets/Score',
-            'Standard Score (#)',
-            'Percentile Rank (%)',
-            'Descriptive Range (average/below average)'
+            'Standard Score (50 - 150)',
+            'Percentile Rank (1 - 99%)',
+            'Descriptive Range'
           ][i];
           controllers
               .add(TextEditingController(text: rowData[columnName] ?? ''));
