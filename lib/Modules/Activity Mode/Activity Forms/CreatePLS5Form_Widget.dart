@@ -974,12 +974,17 @@ class _PLS5TableState extends State<PLS5Table> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Computation of Scores:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('1. Raw scores are obtained from the child\'s performance on various tasks in the assessment.'),
-                Text('2. These raw scores are converted to standard scores using age-based normative data.'),
-                Text('3. Standard scores are then used to determine percentile ranks and descriptive ranges.'),
+                Text('Computation of Scores:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                    '1. Raw scores are obtained from the child\'s performance on various tasks in the assessment.'),
+                Text(
+                    '2. These raw scores are converted to standard scores using age-based normative data.'),
+                Text(
+                    '3. Standard scores are then used to determine percentile ranks and descriptive ranges.'),
                 SizedBox(height: 10),
-                Text('Complete Rubric Table:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Complete Rubric Table:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 Table(
                   border: TableBorder.all(),
                   columnWidths: const {
@@ -989,13 +994,19 @@ class _PLS5TableState extends State<PLS5Table> {
                   },
                   children: [
                     TableRow(
-                      children: ['Standard Score', 'Percentile Rank', 'Descriptive Range']
-                          .map((header) => TableCell(
-                        child: Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Text(header, style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ))
+                      children: [
+                        'Standard Score',
+                        'Percentile Rank',
+                        'Descriptive Range'
+                      ]
+                          .map((header) =>
+                          TableCell(
+                            child: Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Text(header, style: TextStyle(
+                                  fontWeight: FontWeight.bold)),
+                            ),
+                          ))
                           .toList(),
                     ),
                     ...[
@@ -1006,37 +1017,43 @@ class _PLS5TableState extends State<PLS5Table> {
                       ['80 - 89', '9 - 24', 'Below Average'],
                       ['70 - 79', '3 - 8', 'Poor'],
                       ['69 and below', '2 and below', 'Very Poor'],
-                    ].map((row) => TableRow(
-                      children: row
-                          .map((cell) => TableCell(
-                        child: Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Text(cell),
-                        ),
-                      ))
-                          .toList(),
-                    )),
+                    ].map((row) =>
+                        TableRow(
+                          children: row
+                              .map((cell) =>
+                              TableCell(
+                                child: Padding(
+                                  padding: EdgeInsets.all(4),
+                                  child: Text(cell),
+                                ),
+                              ))
+                              .toList(),
+                        )),
                   ],
                 ),
                 SizedBox(height: 10),
-                Text('Rubrics for Each Column:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Rubrics for Each Column:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 Text('1. Standard Score:'),
                 Text('   - Mean: 100'),
                 Text('   - Standard Deviation: 15'),
                 Text('   - Range: Typically 50-150'),
                 Text('2. Percentile Rank:'),
                 Text('   - Range: 1-99'),
-                Text('   - Indicates the percentage of same-age peers scoring at or below this level'),
+                Text(
+                    '   - Indicates the percentage of same-age peers scoring at or below this level'),
                 Text('3. Descriptive Range:'),
                 Text('   - Qualitative description of performance'),
                 Text('   - Based on standard score and percentile rank'),
                 SizedBox(height: 10),
-                Text('Rubric for the Entire Table:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Rubric for the Entire Table:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 Text('The table includes three main components:'),
                 Text('1. Auditory Comprehension (AC)'),
                 Text('2. Expressive Communication (EC)'),
                 Text('3. Total Language Score (TLS)'),
-                Text('Each of these is scored using the rubric provided above. The TLS is a composite score derived from AC and EC.'),
+                Text(
+                    'Each of these is scored using the rubric provided above. The TLS is a composite score derived from AC and EC.'),
               ],
             ),
           ),
@@ -1060,8 +1077,9 @@ class _PLS5TableState extends State<PLS5Table> {
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text('PLS-5 Table', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(width: 8),  // Add some space between the text and the icon
+            Text('PLS-5 Table',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(width: 8), // Add some space between the text and the icon
             IconButton(
               icon: Icon(Icons.info_outline),
               onPressed: _showInfoDialog,
@@ -1086,47 +1104,72 @@ class _PLS5TableState extends State<PLS5Table> {
               children: [
                 const TableRow(
                   children: [
-                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Subsets/Score', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
-                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Standard Score (50 - 150)', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
-                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Percentile Rank (1 - 99%)', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
-                    TableCell(child: Padding(padding: EdgeInsets.all(8.0), child: Center(child: Text('Descriptive Range', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0),
+                        child: Center(
+                            child: Text('Subsets/Score', textAlign: TextAlign
+                                .center, style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0),
+                        child: Center(child: Text(
+                            'Standard Score (50 - 150)', textAlign: TextAlign
+                            .center, style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0),
+                        child: Center(child: Text(
+                            'Percentile Rank (1 - 99%)', textAlign: TextAlign
+                            .center, style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16))))),
+                    TableCell(child: Padding(padding: EdgeInsets.all(8.0),
+                        child: Center(child: Text(
+                            'Descriptive Range', textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16))))),
                   ],
                 ),
                 ...List.generate(
                   textControllers.length,
-                      (rowIndex) => TableRow(
-                    children: List.generate(
-                      textControllers[rowIndex].length,
-                          (colIndex) => TableCell(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Center(
-                            child: colIndex == 0
-                                ? Text(
-                              textControllers[rowIndex][colIndex].text,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 16),
-                            )
-                                : TextFormField(
-                              controller: textControllers[rowIndex][colIndex],
-                              focusNode: focusNodes[rowIndex][colIndex],
-                              autofocus: rowIndex == 0 && colIndex == 1,
-                              textAlign: TextAlign.center,
-                              maxLines: null,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.all(8.0),
-                                isDense: true,
-                                border: OutlineInputBorder(),
+                      (rowIndex) =>
+                      TableRow(
+                        children: List.generate(
+                          textControllers[rowIndex].length,
+                              (colIndex) =>
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Center(
+                                    child: colIndex == 0
+                                        ? Text(
+                                      textControllers[rowIndex][colIndex].text,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 16),
+                                    )
+                                        : TextFormField(
+                                      controller: textControllers[rowIndex][colIndex],
+                                      focusNode: focusNodes[rowIndex][colIndex],
+                                      autofocus: rowIndex == 0 && colIndex == 1,
+                                      textAlign: TextAlign.center,
+                                      maxLines: null,
+                                      keyboardType: colIndex == 3
+                                          ? TextInputType.text
+                                          : TextInputType.number,
+                                      inputFormatters: colIndex == 3
+                                          ? null
+                                          : [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'^\d+\.?\d{0,2}'))
+                                      ],
+                                      decoration: const InputDecoration(
+                                        contentPadding: EdgeInsets.all(8.0),
+                                        isDense: true,
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
                         ),
                       ),
-                    ),
-                  ),
                 ),
               ],
             ),

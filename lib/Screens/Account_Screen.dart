@@ -571,7 +571,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
-                        child: GText('Forgot Password'),
+                        child: GText('Reset Password'),
                       ),
                     ],
                   ),
