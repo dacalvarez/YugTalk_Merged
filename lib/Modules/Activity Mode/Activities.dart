@@ -81,11 +81,10 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
   @override
   void initState() {
     super.initState();
-    _initializeTts();
-    _initializeStt();
+    _initializeTts().then((_) => _initializeStt());
     _getCurrentUserEmail();
     expressiveQuestions.shuffle();
-    selectedQuestions = []; // Initialize selectedQuestions
+    selectedQuestions = [];
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -102,9 +101,9 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
     super.dispose();
   }
 
-  void _initializeTts() async {
+  Future<void> _initializeTts() async {
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.5);
+    await _resetSpeechRate();
   }
 
   void _initializeStt() async {
@@ -322,7 +321,8 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
   }
 
   Future<void> _resetSpeechRate() async {
-    await flutterTts.setSpeechRate(speed);
+    double adjustedSpeed = speed * 0.5; // Slow down the speed
+    await flutterTts.setSpeechRate(adjustedSpeed);
   }
 
   void _processExpressiveResult(SpeechRecognitionResult? result) {
@@ -732,22 +732,33 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
       correctAuditoryComprehension = 0;
       correctExpressiveCommunication = 0;
       currentAssessment = assessmentType == 'Expressive Communication' ? 'Expressive Communication' : 'Auditory Comprehension';
+
+      // Clear all scores
+      scores = {
+        'Auditory Comprehension': {
+          'rawScore': 0,
+          'standardScore': 0,
+          'percentileRank': 0,
+          'descriptiveRange': ''
+        },
+        'Expressive Communication': {
+          'rawScore': 0,
+          'standardScore': 0,
+          'percentileRank': 0,
+          'descriptiveRange': ''
+        },
+        'Total Language Score': {
+          'standardScore': 0,
+          'percentileRank': 0,
+          'descriptiveRange': ''
+        },
+      };
     });
 
     if (currentAssessment == 'Auditory Comprehension') {
       _speakAndListen();
     } else {
       _startExpressiveCommunication();
-    }
-  }
-
-  void _startNextAssessment() {
-    if (assessmentType == 'Auditory Comprehension' || (assessmentType == 'Both' && !isAuditoryComprehensionComplete)) {
-      _speakAndListen();
-    } else if (assessmentType == 'Expressive Communication' || (assessmentType == 'Both' && isAuditoryComprehensionComplete)) {
-      _startExpressiveCommunication();
-    } else {
-      _finishAssessment();
     }
   }
 
@@ -779,6 +790,11 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
     _animationController.forward();
 
     await _resetSpeechRate();
+
+    // Add a small delay before speaking the first word
+    if (currentWordIndex == 0) {
+      await Future.delayed(Duration(milliseconds: 500));
+    }
 
     // Speak the word (Auditory Comprehension part)
     for (int i = 0; i < repetitions; i++) {
@@ -1200,11 +1216,11 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
   int _calculateStandardScore(int rawScore, int totalItems, String subset) {
     double percentage = (rawScore / totalItems) * 100;
     if (subset == 'Expressive Communication') {
-      if (percentage >= 95) return 150;
+      if (percentage >= 98) return 150;
       if (percentage >= 85) return 130;
-      if (percentage >= 70) return 110;
-      if (percentage >= 50) return 90;
-      if (percentage >= 30) return 70;
+      if (percentage >= 75) return 110;
+      if (percentage >= 55) return 90;
+      if (percentage >= 35) return 70;
       return 50;
     } else {
       // Auditory Comprehension
