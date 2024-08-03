@@ -57,6 +57,26 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
   };
   late AnimationController _animationController;
   late Animation<double> _animation;
+  String assessmentType = 'Auditory Comprehension';
+  List<Map<String, dynamic>> expressiveQuestions = [
+    {"question": "What is your name?", "selected": false},
+    {"question": "How old are you?", "selected": false},
+    {"question": "Who is your Mommy?", "selected": false},
+    {"question": "Who is your Daddy?", "selected": false},
+    {"question": "What is your favorite color?", "selected": false},
+    {"question": "What is your favorite game?", "selected": false},
+    {"question": "What is your favorite food?", "selected": false},
+    {"question": "Do you have any brothers or sisters?", "selected": false},
+    {"question": "What's your favorite animal?", "selected": false},
+    {"question": "Who is your Favorite Toy?", "selected": false},
+  ];
+  int currentQuestionIndex = 0;
+  List<Map<String, dynamic>> expressiveResults = [];
+  bool isAssessmentStarted = false;
+  List<Map<String, dynamic>> selectedQuestions = [];
+  bool isAuditoryComprehensionComplete = false;
+  String currentAssessment = '';
+
 
   @override
   void initState() {
@@ -64,8 +84,10 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
     _initializeTts();
     _initializeStt();
     _getCurrentUserEmail();
+    expressiveQuestions.shuffle();
+    selectedQuestions = []; // Initialize selectedQuestions
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
     _animation = CurvedAnimation(
@@ -82,7 +104,7 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
 
   void _initializeTts() async {
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(speed);
+    await flutterTts.setSpeechRate(0.5);
   }
 
   void _initializeStt() async {
@@ -163,24 +185,233 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildBoardSelection(),
+                  _buildAssessmentTypeSelection(),
                   SizedBox(height: 20),
-                  _buildWordSelection(),
-                  SizedBox(height: 20),
-                  _buildSpeedSlider(),
-                  SizedBox(height: 20),
-                  _buildRepetitionsInput(),
-                  SizedBox(height: 20),
-                  if (selectedBoardId != null) _buildBoardDisplay(),
-                  SizedBox(height: 20),
-                  _buildStartAssessmentButton(),
-                  SizedBox(height: 20),
-                  _buildAssessmentStatus(),
-                  _buildAssessmentResults(),
+                  if (!isAssessmentStarted) ...[
+                    if (assessmentType != 'Expressive Communication') ...[
+                      _buildBoardSelection(),
+                      SizedBox(height: 20),
+                      _buildWordSelection(),
+                      SizedBox(height: 20),
+                      _buildSpeedSlider(),
+                      SizedBox(height: 20),
+                      _buildRepetitionsInput(),
+                      SizedBox(height: 20),
+                      if (selectedBoardId != null) _buildBoardDisplay(),
+                      SizedBox(height: 20),
+                    ],
+                    if (assessmentType == 'Expressive Communication' || assessmentType == 'Both')
+                      _buildExpressiveQuestionSelection(),
+                    SizedBox(height: 20),
+                    _buildStartAssessmentButton(),
+                  ] else ...[
+                    if (currentAssessment == 'Auditory Comprehension')
+                      _buildAuditoryComprehensionAssessment(),
+                    if (currentAssessment == 'Expressive Communication')
+                      _buildExpressiveCommunicationAssessment(),
+                  ],
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuditoryComprehensionAssessment() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GText('Auditory Comprehension Assessment',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        SizedBox(height: 10),
+        _buildAssessmentStatus(),
+        SizedBox(height: 10),
+        _buildAuditoryResults(),
+      ],
+    );
+  }
+
+  Widget _buildExpressiveCommunicationAssessment() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GText('Expressive Communication Assessment',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        SizedBox(height: 10),
+        Text('Question ${currentQuestionIndex + 1} of ${selectedQuestions.length}:',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        SizedBox(height: 10),
+        Text(selectedQuestions[currentQuestionIndex]['question'], style: TextStyle(fontSize: 24)),
+        SizedBox(height: 20),
+        Center(
+          child: AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: 1.0 + (_animation.value * 0.1),
+                child: ElevatedButton(
+                  onPressed: _startListeningExpressive,
+                  child: Text(isListening ? 'Listening...' : 'Start Speaking'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isListening ? Colors.red : Colors.green,
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 20),
+        _buildExpressiveResults(),
+      ],
+    );
+  }
+
+
+  void _startListeningExpressive() async {
+    bool available = await speech.initialize(
+      onStatus: (status) {
+        print('Speech recognition status: $status');
+        if (status == 'done') {
+          _processExpressiveResult(null);
+        }
+      },
+      onError: (error) => print('Speech recognition error: $error'),
+    );
+
+    if (available) {
+      setState(() => isListening = true);
+      speech.listen(
+        onResult: (result) => _processExpressiveResult(result),
+        listenFor: Duration(seconds: 10),
+        pauseFor: Duration(seconds: 2),
+        partialResults: false,
+        cancelOnError: true,
+        listenMode: ListenMode.confirmation,
+      );
+
+      _animationController.repeat(reverse: true);
+
+      _listenTimer = Timer(Duration(seconds: 10), () {
+        if (isListening) {
+          speech.stop();
+          _processExpressiveResult(null);
+        }
+      });
+    } else {
+      print("Speech recognition not available");
+      _moveToNextExpressiveQuestion();
+    }
+  }
+
+  void _moveToNextExpressiveQuestion() {
+    if (currentQuestionIndex < selectedQuestions.length) {
+      _startExpressiveCommunication();
+    } else {
+      _finishAssessment();
+    }
+  }
+
+  Future<void> _speakExpressiveQuestion(String question) async {
+    await flutterTts.setLanguage("en-US");
+    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.speak(question);
+    return flutterTts.awaitSpeakCompletion(true);
+  }
+
+  Future<void> _resetSpeechRate() async {
+    await flutterTts.setSpeechRate(speed);
+  }
+
+  void _processExpressiveResult(SpeechRecognitionResult? result) {
+    _listenTimer?.cancel();
+    _animationController.stop();
+    _animationController.reset();
+
+    if (!isListening) return;
+
+    setState(() => isListening = false);
+    speech.stop();
+
+    String response = '';
+    int wordCount = 0;
+
+    if (result != null && result.recognizedWords.isNotEmpty) {
+      response = result.recognizedWords;
+      wordCount = response.split(' ').where((word) => word.isNotEmpty).length;
+    }
+
+    setState(() {
+      expressiveResults.add({
+        'question': selectedQuestions[currentQuestionIndex]['question'],
+        'response': response,
+        'wordCount': wordCount,
+      });
+
+      currentQuestionIndex++;
+    });
+
+    _moveToNextExpressiveQuestion();
+  }
+
+
+  Widget _buildAuditoryResults() {
+    return Column(
+      children: assessmentResults.map((result) => ListTile(
+        title: Text(result['word']),
+        subtitle: Text('Spoken: ${result['spoken']}'),
+        trailing: Icon(
+          result['correct'] ? Icons.check_circle : Icons.cancel,
+          color: result['correct'] ? Colors.green : Colors.red,
+        ),
+      )).toList(),
+    );
+  }
+
+  Widget _buildExpressiveResults() {
+    return Column(
+      children: expressiveResults.map((result) => ListTile(
+        title: Text(result['question']),
+        subtitle: Text('Response: ${result['response']}'),
+        trailing: Text('Words: ${result['wordCount']}'),
+      )).toList(),
+    );
+  }
+
+  Widget _buildAssessmentTypeSelection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GText('Assessment Type',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: assessmentType,
+              items: ['Auditory Comprehension', 'Expressive Communication', 'Both']
+                  .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                  .toList(),
+              onChanged: isAssessmentStarted ? null : (String? newValue) {
+                setState(() {
+                  assessmentType = newValue!;
+                });
+              },
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -432,7 +663,7 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
     );
   }
 
-  Widget _buildAssessmentResults() {
+  Widget _buildExpressiveQuestionSelection() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -441,17 +672,24 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GText('Assessment Results:',
+            GText('Select Expressive Communication Questions:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             SizedBox(height: 8),
-            ...assessmentResults.map((result) => ListTile(
-              title: Text(result['word']),
-              subtitle: Text('Spoken: ${result['spoken']}'),
-              trailing: Icon(
-                result['correct'] ? Icons.check_circle : Icons.cancel,
-                color: result['correct'] ? Colors.green : Colors.red,
-              ),
-            )),
+            ...expressiveQuestions.map((question) => CheckboxListTile(
+              title: Text(question['question']),
+              value: question['selected'],
+              onChanged: (bool? value) {
+                setState(() {
+                  question['selected'] = value;
+                  // Update selectedQuestions immediately
+                  if (value == true) {
+                    selectedQuestions.add(question);
+                  } else {
+                    selectedQuestions.removeWhere((q) => q['question'] == question['question']);
+                  }
+                });
+              },
+            )).toList(),
           ],
         ),
       ),
@@ -475,23 +713,52 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
     });
   }
 
-  void _startAssessment() async {
-    if (selectedWords.isEmpty) {
+  void _startAssessment() {
+    if ((assessmentType == 'Expressive Communication' || assessmentType == 'Both') &&
+        selectedQuestions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: GText('Please select at least one word')),
+        SnackBar(content: GText('Please select at least one expressive communication question')),
       );
       return;
     }
 
     setState(() {
+      isAssessmentStarted = true;
       currentWordIndex = 0;
+      currentQuestionIndex = 0;
       correctWords = 0;
       assessmentResults.clear();
+      expressiveResults.clear();
       correctAuditoryComprehension = 0;
       correctExpressiveCommunication = 0;
+      currentAssessment = assessmentType == 'Expressive Communication' ? 'Expressive Communication' : 'Auditory Comprehension';
     });
 
-    _speakAndListen();
+    if (currentAssessment == 'Auditory Comprehension') {
+      _speakAndListen();
+    } else {
+      _startExpressiveCommunication();
+    }
+  }
+
+  void _startNextAssessment() {
+    if (assessmentType == 'Auditory Comprehension' || (assessmentType == 'Both' && !isAuditoryComprehensionComplete)) {
+      _speakAndListen();
+    } else if (assessmentType == 'Expressive Communication' || (assessmentType == 'Both' && isAuditoryComprehensionComplete)) {
+      _startExpressiveCommunication();
+    } else {
+      _finishAssessment();
+    }
+  }
+
+  void _startExpressiveCommunication() {
+    if (currentQuestionIndex >= selectedQuestions.length) {
+      _finishAssessment();
+      return;
+    }
+
+    _speakExpressiveQuestion(selectedQuestions[currentQuestionIndex]['question'])
+        .then((_) => _startListeningExpressive());
   }
 
   void _speakAndListen() async {
@@ -510,6 +777,8 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
       assessmentStatus = 'Listen...';
     });
     _animationController.forward();
+
+    await _resetSpeechRate();
 
     // Speak the word (Auditory Comprehension part)
     for (int i = 0; i < repetitions; i++) {
@@ -606,54 +875,126 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
   }
 
   void _moveToNextWord() {
-    _animationController.reverse().then((_) => _speakAndListen());
+    if (currentWordIndex < selectedWords.length) {
+      _animationController.reverse().then((_) => _speakAndListen());
+    } else {
+      _finishAssessment();
+    }
   }
 
   void _finishAssessment() {
     speech.stop();
     _listenTimer?.cancel();
-    setState(() {
-      isListening = false;
 
-      // Calculate raw scores, taking repetitions into account
+    if (assessmentType == 'Both' && currentAssessment == 'Auditory Comprehension') {
+      setState(() {
+        currentAssessment = 'Expressive Communication';
+        currentQuestionIndex = 0;
+      });
+      _startExpressiveCommunication();
+      return;
+    }
+
+    if (assessmentType == 'Auditory Comprehension' || assessmentType == 'Both') {
       scores['Auditory Comprehension']!['rawScore'] = (correctAuditoryComprehension / repetitions).round();
-      scores['Expressive Communication']!['rawScore'] = (correctExpressiveCommunication / repetitions).round();
+    }
 
-      // Calculate standard scores, percentile ranks, and descriptive ranges
-      for (var subset in ['Auditory Comprehension', 'Expressive Communication']) {
-        int rawScore = scores[subset]!['rawScore'];
-        int totalItems = (selectedWords.length / repetitions).round();
-        int standardScore = _calculateStandardScore(rawScore, totalItems);
-        int percentileRank = _calculatePercentileRank(standardScore);
-        String descriptiveRange = _getDescriptiveRange(standardScore);
+    if (assessmentType == 'Expressive Communication' || assessmentType == 'Both') {
+      int totalWords = expressiveResults.fold(0, (sum, result) => sum + (result['wordCount'] as int));
+      scores['Expressive Communication']!['rawScore'] = totalWords;
+    }
 
-        scores[subset]!['standardScore'] = standardScore;
-        scores[subset]!['percentileRank'] = percentileRank;
-        scores[subset]!['descriptiveRange'] = descriptiveRange;
-      }
+    List<String> subsets = [];
+    if (assessmentType == 'Auditory Comprehension' || assessmentType == 'Both') {
+      subsets.add('Auditory Comprehension');
+    }
+    if (assessmentType == 'Expressive Communication' || assessmentType == 'Both') {
+      subsets.add('Expressive Communication');
+    }
 
-      // Calculate Total Language Score
+    for (var subset in subsets) {
+      int rawScore = scores[subset]!['rawScore'];
+      int totalItems = subset == 'Auditory Comprehension'
+          ? (selectedWords.length / repetitions).round()
+          : expressiveQuestions.length;
+      int standardScore = _calculateStandardScore(rawScore, totalItems, subset); // Fixed: added subset as the third argument
+      int percentileRank = _calculatePercentileRank(standardScore);
+      String descriptiveRange = _getDescriptiveRange(standardScore);
+
+      scores[subset]!['standardScore'] = standardScore;
+      scores[subset]!['percentileRank'] = percentileRank;
+      scores[subset]!['descriptiveRange'] = descriptiveRange;
+    }
+
+    if (assessmentType == 'Both') {
       int totalStandardScore = (scores['Auditory Comprehension']!['standardScore'] +
           scores['Expressive Communication']!['standardScore']) ~/ 2;
       scores['Total Language Score']!['standardScore'] = totalStandardScore;
       scores['Total Language Score']!['percentileRank'] = _calculatePercentileRank(totalStandardScore);
       scores['Total Language Score']!['descriptiveRange'] = _getDescriptiveRange(totalStandardScore);
+    }
+
+    setState(() {
+      isAssessmentStarted = false;
+      assessmentStatus = 'Assessment complete';
     });
 
     _showResultsTable();
   }
 
   void _navigateToPLS5Form() {
-    List<Map<String, String>> pls5Rows = scores.entries.map((entry) {
-      return {
-        'Subsets/Score': entry.key,
-        'Standard Score (50 - 150)':
-        entry.value['standardScore']?.toString() ?? '',
-        'Percentile Rank (1 - 99%)':
-        entry.value['percentileRank']?.toString() ?? '',
-        'Descriptive Range': entry.value['descriptiveRange']?.toString() ?? '',
-      };
-    }).toList();
+    _getBoardNameById(selectedBoardId).then((selectedBoardName) {
+      print("Selected Board ID before navigation: $selectedBoardId");
+    List<Map<String, String>> pls5Rows = [
+      {
+        'Subsets/Score': 'Auditory Comprehension',
+        'Standard Score (50 - 150)': assessmentType == 'Auditory Comprehension' || assessmentType == 'Both'
+            ? scores['Auditory Comprehension']!['standardScore'].toString()
+            : '',
+        'Percentile Rank (1 - 99%)': assessmentType == 'Auditory Comprehension' || assessmentType == 'Both'
+            ? scores['Auditory Comprehension']!['percentileRank'].toString()
+            : '',
+        'Descriptive Range': assessmentType == 'Auditory Comprehension' || assessmentType == 'Both'
+            ? scores['Auditory Comprehension']!['descriptiveRange'].toString()
+            : '',
+      },
+      {
+        'Subsets/Score': 'Expressive Communication',
+        'Standard Score (50 - 150)': assessmentType == 'Expressive Communication' || assessmentType == 'Both'
+            ? scores['Expressive Communication']!['standardScore'].toString()
+            : '',
+        'Percentile Rank (1 - 99%)': assessmentType == 'Expressive Communication' || assessmentType == 'Both'
+            ? scores['Expressive Communication']!['percentileRank'].toString()
+            : '',
+        'Descriptive Range': assessmentType == 'Expressive Communication' || assessmentType == 'Both'
+            ? scores['Expressive Communication']!['descriptiveRange'].toString()
+            : '',
+      },
+      {
+        'Subsets/Score': 'Total Language Score',
+        'Standard Score (50 - 150)': assessmentType == 'Both'
+            ? scores['Total Language Score']!['standardScore'].toString()
+            : '',
+        'Percentile Rank (1 - 99%)': assessmentType == 'Both'
+            ? scores['Total Language Score']!['percentileRank'].toString()
+            : '',
+        'Descriptive Range': assessmentType == 'Both'
+            ? scores['Total Language Score']!['descriptiveRange'].toString()
+            : '',
+      },
+    ];
+
+    String? pls5AuditoryComprehensionSummary = assessmentType == 'Auditory Comprehension' || assessmentType == 'Both'
+        ? _generateAuditoryComprehensionSummary()
+        : null;
+
+    String? pls5ExpressiveCommunicationSummary = assessmentType == 'Expressive Communication' || assessmentType == 'Both'
+        ? _generateExpressiveCommunicationSummary()
+        : null;
+
+    String? pls5TotalLanguageScoreSummary = assessmentType == 'Both'
+        ? _generateTotalLanguageScoreSummary()
+        : null;
 
     ActivityForms assessmentResults = ActivityForms(
       formType: 'PLS-5',
@@ -665,7 +1006,10 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
       age: 0,
       dateCreated: DateTime.now(),
       dateModified: DateTime.now(),
-      activityBoards: [],
+      activityBoards: selectedBoardName.isNotEmpty ? [selectedBoardName] : [],
+      pls5AuditoryComprehensionSummary: pls5AuditoryComprehensionSummary ?? '',
+      pls5ExpressiveCommunicationSummary: pls5ExpressiveCommunicationSummary ?? '',
+      pls5TotalLanguageScoreSummary: pls5TotalLanguageScoreSummary ?? '',
     );
 
     Navigator.push(
@@ -676,6 +1020,221 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
         ),
       ),
     );
+    });
+  }
+
+  Future<String> _getBoardNameById(String? boardId) async {
+    if (boardId == null) return "No board selected";
+
+    try {
+      DocumentSnapshot boardDoc = await FirebaseFirestore.instance
+          .collection('board')
+          .doc(boardId)
+          .get();
+
+      if (boardDoc.exists) {
+        return boardDoc['name'] ?? "Unnamed Board";
+      } else {
+        return "Board not found";
+      }
+    } catch (e) {
+      print("Error fetching board name: $e");
+      return "Error fetching board name";
+    }
+  }
+
+  String _generateAuditoryComprehensionSummary() {
+    String descriptiveRange = scores['Auditory Comprehension']?['descriptiveRange'] ?? '';
+    List<String> allWords = selectedWords;
+    List<String> correctWords = assessmentResults
+        .where((result) => result['correct'] == true)
+        .map((result) => result['word'] as String)
+        .toList();
+    List<String> incorrectWords = assessmentResults
+        .where((result) => result['correct'] == false)
+        .map((result) => result['word'] as String)
+        .toList();
+
+    String summary = 'The child has shown ';
+
+    switch (descriptiveRange) {
+      case 'Very Superior':
+        summary += 'great Auditory Comprehension for their age, ';
+        break;
+      case 'Superior':
+        summary += 'good Auditory Comprehension for their age, ';
+        break;
+      case 'Above Average':
+        summary += 'decent Auditory Comprehension for their age, ';
+        break;
+      case 'Average':
+        summary += 'an average Auditory Comprehension for their age, ';
+        break;
+      case 'Below Average':
+        summary += 'to have fallen a bit short with their Auditory Comprehension for their age, ';
+        break;
+      case 'Poor':
+        summary += 'to have poor Auditory Comprehension for their age, ';
+        break;
+      case 'Very Poor':
+        summary += 'to have Very Poor Auditory Comprehension for their age, ';
+        break;
+    }
+
+    summary += 'assessed with the words ${allWords.join(", ")}, ';
+
+    switch (descriptiveRange) {
+      case 'Very Superior':
+        summary += 'they were pronounced flawlessly, and their delivery was overall among the best their age. ';
+        break;
+      case 'Superior':
+        summary += 'they were pronounced with little to no hesitation, and their delivery was a clear cut above the rest. ';
+        break;
+      case 'Above Average':
+        summary += 'they were pronounced with a hint of hesitation, but nonetheless their delivery overall was modest. ';
+        break;
+      case 'Average':
+        summary += 'they were pronounced with some hesitation, and their delivery overall is of no problem. ';
+        break;
+      case 'Below Average':
+        summary += 'their pronunciation could use more work and so is their delivery. ';
+        break;
+      case 'Poor':
+        summary += 'their pronunciation and overall delivery are of priority for improvement. ';
+        break;
+      case 'Very Poor':
+        summary += 'they are completely behind in terms of pronunciation and overall delivery for their age and it is an absolute must for improvement and progression. ';
+        break;
+    }
+
+    if (incorrectWords.length == allWords.length) {
+      summary += 'They pronounced all words incorrectly. ';
+    } else if (incorrectWords.isNotEmpty) {
+      summary += 'They pronounced ${incorrectWords.join(", ")} incorrectly ';
+      if (correctWords.isNotEmpty) {
+        summary += 'and ${correctWords.join(", ")} correctly. ';
+      }
+    } else {
+      summary += 'They pronounced all words correctly. ';
+    }
+
+    return summary;
+  }
+
+  String _generateExpressiveCommunicationSummary() {
+    String descriptiveRange = scores['Expressive Communication']?['descriptiveRange'] ?? '';
+    int totalWords = expressiveResults.fold(0, (sum, result) => sum + (result['wordCount'] as int));
+    double averageWordsPerQuestion = totalWords / expressiveResults.length;
+
+    String summary = 'The child has demonstrated ';
+
+    switch (descriptiveRange) {
+      case 'Very Superior':
+        summary += 'exceptional Expressive Communication skills for their age. ';
+        break;
+      case 'Superior':
+        summary += 'strong Expressive Communication skills for their age. ';
+        break;
+      case 'Above Average':
+        summary += 'above-average Expressive Communication skills for their age. ';
+        break;
+      case 'Average':
+        summary += 'age-appropriate Expressive Communication skills. ';
+        break;
+      case 'Below Average':
+        summary += 'slightly below-average Expressive Communication skills for their age. ';
+        break;
+      case 'Poor':
+        summary += 'poor Expressive Communication skills for their age. ';
+        break;
+      case 'Very Poor':
+        summary += 'significantly delayed Expressive Communication skills for their age. ';
+        break;
+    }
+
+    summary += 'They responded to ${expressiveResults.length} questions with an average of ${averageWordsPerQuestion.toStringAsFixed(1)} words per response. ';
+
+    if (averageWordsPerQuestion > 10) {
+      summary += 'Their responses were detailed and elaborate. ';
+    } else if (averageWordsPerQuestion > 5) {
+      summary += 'Their responses were of moderate length and detail. ';
+    } else {
+      summary += 'Their responses were brief and could benefit from expansion. ';
+    }
+
+    return summary;
+  }
+
+  String _generateTotalLanguageScoreSummary() {
+    String descriptiveRange = scores['Total Language Score']?['descriptiveRange'] ?? '';
+
+    String summary = 'Overall, the child\'s Total Language Score indicates ';
+
+    switch (descriptiveRange) {
+      case 'Very Superior':
+        summary += 'exceptional language skills far above their age level. They demonstrate outstanding abilities in both understanding and expressing language, showing potential for advanced linguistic development.';
+        break;
+      case 'Superior':
+        summary += 'language skills significantly above their age level. They show strong capabilities in comprehending and communicating ideas, with potential for accelerated language growth.';
+        break;
+      case 'Above Average':
+        summary += 'language skills above what is typically expected for their age. They exhibit good language understanding and expression, with room for further enhancement of their strong foundation.';
+        break;
+      case 'Average':
+        summary += 'age-appropriate language skills. They show typical development in both receptive and expressive language, meeting the expected milestones for their age group.';
+        break;
+      case 'Below Average':
+        summary += 'language skills slightly below what is expected for their age. While they can communicate basic ideas, there can be improvement in both understanding and expressing more complex language concepts.';
+        break;
+      case 'Poor':
+        summary += 'significant challenges in language skills compared to peers. They may struggle with understanding or expressing more complex ideas and would benefit from targeted language intervention.';
+        break;
+      case 'Very Poor':
+        summary += 'substantial difficulties in language skills, falling far below age expectations. Immediate and intensive language intervention is recommended to address both receptive and expressive language delays.';
+        break;
+    }
+
+    return summary;
+  }
+
+  int _calculateStandardScore(int rawScore, int totalItems, String subset) {
+    double percentage = (rawScore / totalItems) * 100;
+    if (subset == 'Expressive Communication') {
+      if (percentage >= 95) return 150;
+      if (percentage >= 85) return 130;
+      if (percentage >= 70) return 110;
+      if (percentage >= 50) return 90;
+      if (percentage >= 30) return 70;
+      return 50;
+    } else {
+      // Auditory Comprehension
+      if (percentage >= 98) return 150;
+      if (percentage >= 90) return 130;
+      if (percentage >= 75) return 110;
+      if (percentage >= 50) return 90;
+      if (percentage >= 25) return 70;
+      return 50;
+    }
+  }
+
+  int _calculatePercentileRank(int standardScore) {
+    if (standardScore >= 135) return 99;
+    if (standardScore >= 120) return 95;
+    if (standardScore >= 110) return 84;
+    if (standardScore >= 90) return 50;
+    if (standardScore >= 80) return 16;
+    if (standardScore >= 70) return 5;
+    return 1;
+  }
+
+  String _getDescriptiveRange(int standardScore) {
+    if (standardScore >= 135) return 'Very Superior';
+    if (standardScore >= 120) return 'Superior';
+    if (standardScore >= 110) return 'Above Average';
+    if (standardScore >= 90) return 'Average';
+    if (standardScore >= 80) return 'Below Average';
+    if (standardScore >= 70) return 'Poor';
+    return 'Very Poor';
   }
 
   void _showResultsTable() {
@@ -688,6 +1247,74 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (assessmentType == 'Auditory Comprehension' || assessmentType == 'Both') ...[
+                  Text('Auditory Comprehension Results:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Table(
+                    border: TableBorder.all(),
+                    columnWidths: const <int, TableColumnWidth>{
+                      0: FlexColumnWidth(2),
+                      1: FlexColumnWidth(2),
+                      2: FlexColumnWidth(1),
+                    },
+                    children: [
+                      TableRow(
+                        children: [
+                          _buildTableCell('Word', isHeader: true),
+                          _buildTableCell('Spoken', isHeader: true),
+                          _buildTableCell('Correct', isHeader: true),
+                        ],
+                      ),
+                      for (var result in assessmentResults)
+                        TableRow(
+                          children: [
+                            _buildTableCell(result['word']),
+                            _buildTableCell(result['spoken']),
+                            _buildTableCell(result['correct'] ? 'Yes' : 'No'),
+                          ],
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Text('Auditory Comprehension Summary:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_generateAuditoryComprehensionSummary()),
+                  SizedBox(height: 20),
+                ],
+                if (assessmentType == 'Expressive Communication' || assessmentType == 'Both') ...[
+                  Text('Expressive Communication Results:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Table(
+                    border: TableBorder.all(),
+                    columnWidths: const <int, TableColumnWidth>{
+                      0: FlexColumnWidth(3),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(1),
+                    },
+                    children: [
+                      TableRow(
+                        children: [
+                          _buildTableCell('Question', isHeader: true),
+                          _buildTableCell('Response', isHeader: true),
+                          _buildTableCell('Words', isHeader: true),
+                        ],
+                      ),
+                      for (var result in expressiveResults)
+                        TableRow(
+                          children: [
+                            _buildTableCell(result['question']),
+                            _buildTableCell(result['response']),
+                            _buildTableCell(result['wordCount'].toString()),
+                          ],
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Text('Expressive Communication Summary:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_generateExpressiveCommunicationSummary()),
+                  SizedBox(height: 20),
+                ],
                 Table(
                   border: TableBorder.all(),
                   columnWidths: const <int, TableColumnWidth>{
@@ -721,6 +1348,12 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
                   ],
                 ),
                 SizedBox(height: 20),
+                if (assessmentType == 'Both') ...[
+                  Text('Total Language Score Summary:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_generateTotalLanguageScoreSummary()),
+                  SizedBox(height: 20),
+                ],
                 Text('Would you like to plot these results in the PLS-5 Form?'),
               ],
             ),
@@ -755,31 +1388,5 @@ class _SpeechAssessmentScreenState extends State<SpeechAssessmentScreen>
         ),
       ),
     );
-  }
-
-  int _calculateStandardScore(int rawScore, int totalItems) {
-    // This is a simplified calculation. Replace with actual normative data conversion.
-    double percentageCorrect = rawScore / totalItems;
-    return (percentageCorrect * 100).round().clamp(50, 150);
-  }
-
-  int _calculatePercentileRank(int standardScore) {
-    if (standardScore >= 131) return 99;
-    if (standardScore >= 121) return 95;
-    if (standardScore >= 111) return 84;
-    if (standardScore >= 90) return 50;
-    if (standardScore >= 80) return 16;
-    if (standardScore >= 70) return 5;
-    return 1;
-  }
-
-  String _getDescriptiveRange(int standardScore) {
-    if (standardScore >= 131) return 'Very Superior';
-    if (standardScore >= 121) return 'Superior';
-    if (standardScore >= 111) return 'Above Average';
-    if (standardScore >= 90) return 'Average';
-    if (standardScore >= 80) return 'Below Average';
-    if (standardScore >= 70) return 'Poor';
-    return 'Very Poor';
   }
 }

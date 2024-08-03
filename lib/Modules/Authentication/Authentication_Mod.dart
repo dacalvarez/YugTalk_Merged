@@ -190,7 +190,7 @@ class _LoginWidgetState extends State<LoginWidget> {
       });
 
       final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -309,25 +309,25 @@ class _LoginWidgetState extends State<LoginWidget> {
                       _isLoading
                           ? const CircularProgressIndicator()
                           : FloatingActionButton.extended(
-                              onPressed: () {
-                                String email = emailController.text.trim();
-                                String password =
-                                    passwordController.text.trim();
-                                if (email.isEmpty || password.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Please fill in all the fields.'),
-                                    ),
-                                  );
-                                } else {
-                                  signInWithEmailAndPassword(
-                                      context, email, password);
-                                }
-                              },
-                              backgroundColor: const Color(0xFFe8c221),
-                              label: const Text('Continue'),
-                            ),
+                        onPressed: () {
+                          String email = emailController.text.trim();
+                          String password =
+                          passwordController.text.trim();
+                          if (email.isEmpty || password.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Please fill in all the fields.'),
+                              ),
+                            );
+                          } else {
+                            signInWithEmailAndPassword(
+                                context, email, password);
+                          }
+                        },
+                        backgroundColor: const Color(0xFFe8c221),
+                        label: const Text('Continue'),
+                      ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () {
@@ -335,7 +335,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  const ForgotPassword_Widget(),
+                              const ForgotPassword_Widget(),
                             ),
                           );
                         },
@@ -379,7 +379,7 @@ class _RegisterWidgetState extends State<RegisterWidget> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController reenterPasswordController =
-      TextEditingController();
+  TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -426,7 +426,7 @@ class _RegisterWidgetState extends State<RegisterWidget> {
         }
 
         final QuerySnapshot<Map<String, dynamic>> querySnapshot =
-            await FirebaseFirestore.instance.collection('user').get();
+        await FirebaseFirestore.instance.collection('user').get();
 
         int highestId = 0;
         for (final doc in querySnapshot.docs) {
@@ -439,7 +439,7 @@ class _RegisterWidgetState extends State<RegisterWidget> {
         final String userId = (highestId + 1).toString();
 
         UserCredential userCredential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
@@ -488,83 +488,99 @@ class _RegisterWidgetState extends State<RegisterWidget> {
                         ),
                         TextSpan(
                           text:
-                              'an Augmentative and Alternative Communication (AAC) app designed to aid pediatric patients aged 3-5 with speech and language disorders, while facilitating assessments and therapeutic sessions. By using this app, you agree to be bound by the following terms and conditions:\n\n',
+                          'an Augmentative and Alternative Communication (AAC) app designed for academic research to aid pediatric patients aged 3-5 with speech and language disorders, while facilitating assessments and therapeutic sessions. By using this app, users agree to be bound by the following terms and conditions:\n\n',
                         ),
                         TextSpan(
-                          text: 'Purpose of the App:\n',
+                          text: '1. Purpose of the App:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'YugTalk serves as an AAC tool to assist children diagnosed with speech and language disorders, including apraxia of speech, phonological disorders, and receptive-expressive language disorder. The app facilitates communication using symbols and images in both Filipino and English languages. It also supports guardians in guiding children and allows Speech-Language Pathologists (SLPs) to perform standard assessments such as modified Preschool Language Scale, Fifth Edition (PLS-5) or Brigance.\n\n',
+                          'YugTalk serves as an AAC tool to assist children diagnosed with speech and language disorders, including apraxia of speech, phonological disorders, and receptive-expressive language disorder. The app facilitates communication using symbols and images in both Filipino and English languages. It also supports guardians in guiding children and allows Speech-Language Pathologists (SLPs) to perform standard assessments such as modified Preschool Language Scale, Fifth Edition (PLS-5) or Brigance.\n\n',
                         ),
                         TextSpan(
-                          text: 'Responsibility:\n',
+                          text: '2. Responsibility:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'It is the responsibility of parents or legal guardians to supervise and monitor the use of YugTalk by children aged 3-5. This includes ensuring appropriate usage and providing necessary support during app interactions. Guardians are expected to follow the guidance provided by the research team and SLPs regarding the safe and effective use of the app.\n\n',
+                          'Parents or legal guardians must supervise and monitor the use of YugTalk by children aged 3-5. This includes ensuring appropriate usage and providing necessary support during app interactions. Guardians are expected to follow the guidance provided by the research team and SLPs regarding the safe and effective use of the app.\n\n',
                         ),
                         TextSpan(
-                          text: 'Privacy and Data Security:\n',
+                          text: '3. Privacy and Data Security:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'We prioritize the privacy and security of user data. Personal information collected through YugTalk will only be used for improving app functionality and research purposes. All data collected will be anonymized and aggregated before any potential publication or sharing, and will not be shared with third parties without consent, except as required by law.\n\n',
+                          'The privacy and security of user data are prioritized in compliance with the Data Privacy Act of 2012 (R.A. 10173) and the Cybercrime Prevention Act of 2012 (R.A. 10175). YugTalk uses Firebase authentication to ensure data security. All collected data will be anonymized and aggregated, and will not be shared with third parties without consent, except as required by law. Users have the right to access, correct, or delete their personal data. The validity of testing and results is overseen by the collaborating SLPs.\n\n',
                         ),
                         TextSpan(
-                          text: 'In-App Content:\n',
+                          text: '4. Accessibility:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'All images, symbols, and educational content provided within YugTalk are curated to be suitable for young children with speech disorders. Guardians are advised to monitor the use of the app and report any inappropriate content immediately for prompt action.\n\n',
+                          'In accordance with the Magna Carta for Disabled Persons (R.A. 7277), YugTalk is designed to be accessible to persons with disabilities. The app implements features such as alternative text for images and easy navigation to ensure usability for people with various types of disabilities. YugTalk is intended to be used under the guidance of guardians or SLPs and is not designed for independent use by pediatric patients.\n\n',
                         ),
                         TextSpan(
-                          text: 'User Conduct:\n',
+                          text: '5. Research Purposes:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'Users agree to use YugTalk in a manner that is consistent with its intended purpose and refrain from engaging in activities that may disrupt or harm the app\'s functionality or other users\' experience. Misuse or unauthorized access to the app may result in the suspension or termination of user privileges.\n\n',
+                          'YugTalk is developed for academic research and will not be published or distributed commercially. Any data collected will be used solely for research purposes.\n\n',
                         ),
                         TextSpan(
-                          text: 'Installation and Updates:\n',
+                          text: '6. User Conduct:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'YugTalk will be sideloaded onto iPads provided by the research team. Parents or legal guardians acknowledge that the app will be installed for research purposes and agree to allow their child to use YugTalk under supervision. Periodic updates and maintenance may be performed by the research team to enhance YugTalk\'s performance and add new features. Users are encouraged to follow guidance from the research team regarding app updates.\n\n',
+                          'Users agree to use YugTalk in a manner consistent with its intended research purpose and refrain from activities that may disrupt or harm the app\'s functionality or compromise the research integrity.\n\n',
                         ),
                         TextSpan(
-                          text: 'Feedback and Support:\n',
+                          text: '7. Installation and Updates:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'We welcome feedback and suggestions from users and strive to provide timely support for any technical issues encountered while using YugTalk. Please contact our support team for assistance.\n\n',
+                          'YugTalk will be sideloaded onto iPads provided by the research team. Parents or legal guardians agree to allow their child to use YugTalk under supervision for the duration of the research study.\n\n',
                         ),
                         TextSpan(
-                          text: 'Research Participation:\n',
+                          text: '8. Feedback and Support:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'YugTalk may involve research activities aimed at developing and improving AAC technologies. Participation in research is voluntary, and parental consent is required before children can participate in any research-related activities. Guardians have the right to withdraw their consent at any time.\n\n',
+                          'For any technical issues or feedback, users should contact the thesis developers who serve as the support team for this research project.\n\n',
                         ),
                         TextSpan(
-                          text: 'Governing Law:\n',
+                          text: '9. Intellectual Property:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'These terms and conditions are governed by and construed in accordance with the laws of the Philippines. Any disputes arising out of or in connection with these terms and conditions shall be subject to the exclusive jurisdiction of the courts of the Philippines.\n\n',
+                          'YugTalk respects intellectual property rights as per the Intellectual Property Code of the Philippines (R.A. 8293). All content within YugTalk, including images, symbols, and educational materials, is the property of the research team or used with permission. Licenses have been obtained for all third-party content used in the app to avoid infringing on any copyrights or trademarks. Users may not reproduce, distribute, or create derivative works from this content without explicit permission.\n\n',
+                        ),
+                        TextSpan(
+                          text: '10. Child Protection:\n',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text:
-                              'By using YugTalk, you acknowledge that you have read, understood, and agree to abide by these terms and conditions.',
+                          'In accordance with the Special Protection of Children Against Abuse, Exploitation and Discrimination Act (R.A. 7610), verifiable parental consent is obtained before collecting, using, or disclosing personal information from children. The privacy policy clearly states data collection practices related to children and how their data is protected.\n\n',
+                        ),
+                        TextSpan(
+                          text: '11. Governing Law:\n',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text:
+                          'These terms and conditions are governed by and construed in accordance with the laws of the Philippines, including but not limited to the Data Privacy Act of 2012 (R.A. 10173), the Cybercrime Prevention Act of 2012 (R.A. 10175), the Magna Carta for Disabled Persons (R.A. 7277), the Intellectual Property Code of the Philippines (R.A. 8293), and the Special Protection of Children Against Abuse, Exploitation and Discrimination Act (R.A. 7610). Any disputes arising from the use of YugTalk or these terms shall be subject to the exclusive jurisdiction of the courts in the Philippines. Users agree to comply with all applicable local, national, and international laws and regulations in their use of YugTalk.\n\n',
+                        ),
+                        TextSpan(
+                          text:
+                          'By using YugTalk, users acknowledge that they have read, understood, and agree to abide by these terms and conditions. Users also consent to participate in this academic research study under the specified conditions.',
                         ),
                       ],
                     ),
@@ -748,7 +764,7 @@ class _RegisterWidgetState extends State<RegisterWidget> {
                             onPressed: () {
                               setState(() {
                                 _isReenterPasswordVisible =
-                                    !_isReenterPasswordVisible;
+                                !_isReenterPasswordVisible;
                               });
                             },
                           ),
@@ -790,17 +806,18 @@ class _RegisterWidgetState extends State<RegisterWidget> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed:
-                            _isLoading ? null : () => _registerUser(context),
+                        _isLoading ? null : () => _registerUser(context),
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all<Color>(
                               const Color(0xFFe8c221)),
-                          foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+                          foregroundColor:
+                          WidgetStateProperty.all<Color>(Colors.white),
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              )
+                          valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
                             : const Text('Register'),
                       )
                     ],

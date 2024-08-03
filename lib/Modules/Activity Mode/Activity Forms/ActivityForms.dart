@@ -26,9 +26,9 @@ class ActivityForms {
   final String pls5TotalLanguageScoreStandardScore;
   final String pls5TotalLanguageScorePercentileRank;
   final String pls5TotalLanguageScoreDescriptiveRange;
-  final String pls5TotalLanguageScoreSummary;
-  final String pls5AuditoryComprehensionSummary;
-  final String pls5ExpressiveCommunicationSummary;
+  final String? pls5TotalLanguageScoreSummary;
+  final String? pls5AuditoryComprehensionSummary;
+  final String? pls5ExpressiveCommunicationSummary;
   final String pls5OtherComments;
 
   // Fields for Brigance form
