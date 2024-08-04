@@ -571,12 +571,18 @@ class _RegisterWidgetState extends State<RegisterWidget> {
                           'In accordance with the Special Protection of Children Against Abuse, Exploitation and Discrimination Act (R.A. 7610), verifiable parental consent is obtained before collecting, using, or disclosing personal information from children. The privacy policy clearly states data collection practices related to children and how their data is protected.\n\n',
                         ),
                         TextSpan(
-                          text: '11. Governing Law:\n',
+                          text: '11. Professional Use:\n',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
-                          text:
-                          'These terms and conditions are governed by and construed in accordance with the laws of the Philippines, including but not limited to the Data Privacy Act of 2012 (R.A. 10173), the Cybercrime Prevention Act of 2012 (R.A. 10175), the Magna Carta for Disabled Persons (R.A. 7277), the Intellectual Property Code of the Philippines (R.A. 8293), and the Special Protection of Children Against Abuse, Exploitation and Discrimination Act (R.A. 7610). Any disputes arising from the use of YugTalk or these terms shall be subject to the exclusive jurisdiction of the courts in the Philippines. Users agree to comply with all applicable local, national, and international laws and regulations in their use of YugTalk.\n\n',
+                          text: 'In accordance with the Speech Language Pathology Act (R.A. 11249), the Activity Mode of the app can only be used and accessed by a Speech Language Pathologist. This ensures that the assessment of the child is conducted correctly by a professional in the field of speech therapy.\n\n',
+                        ),
+                        TextSpan(
+                          text: '12. Governing Law:\n',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: 'These terms and conditions are governed by and construed in accordance with the laws of the Philippines, including but not limited to the Data Privacy Act of 2012 (R.A. 10173), the Cybercrime Prevention Act of 2012 (R.A. 10175), the Magna Carta for Disabled Persons (R.A. 7277), the Intellectual Property Code of the Philippines (R.A. 8293), the Special Protection of Children Against Abuse, Exploitation and Discrimination Act (R.A. 7610), and the Speech Language Pathology Act (R.A. 11249). Any disputes arising from the use of YugTalk or these terms shall be subject to the exclusive jurisdiction of the courts in the Philippines. Users agree to comply with all applicable local, national, and international laws and regulations in their use of YugTalk.\n\n',
                         ),
                         TextSpan(
                           text:

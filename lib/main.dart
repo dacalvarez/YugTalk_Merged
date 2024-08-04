@@ -94,6 +94,7 @@ class App extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(
+            debugShowCheckedModeBanner: false,
             home: Scaffold(
               body: Center(
                 child: CircularProgressIndicator(),
@@ -212,6 +213,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(
+            debugShowCheckedModeBanner: false,
             home: Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
@@ -226,6 +228,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const MaterialApp(
+                debugShowCheckedModeBanner: false,
                 home: Scaffold(
                   body: Center(child: CircularProgressIndicator()),
                 ),
@@ -306,6 +309,7 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
             );
 
             return MaterialApp(
+              debugShowCheckedModeBanner: false,
               title: 'YugTalk App',
               locale: DevicePreview.locale(context),
               builder: DevicePreview.appBuilder,
