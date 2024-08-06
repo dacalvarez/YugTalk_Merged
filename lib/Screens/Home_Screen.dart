@@ -1,4 +1,3 @@
-//this is lex'
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -45,8 +44,10 @@ class _Home_ModState extends State<Home_Mod>
   List<Map<String, dynamic>> _leastUsedWords = [];
   int _mostUsedWordsCount = 0;
   int _leastUsedWordsCount = 0;
+  late Stream<QuerySnapshot> _boardStream;
+  Map<String, Map<String, int>> _wordUsageCounts = {};
+  Map<String, String> _boardNames = {};
 
-// Add this method to the _Home_ModState class
   Stream<List<Map<String, dynamic>>> getWordUsageStream() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) {
@@ -117,6 +118,7 @@ class _Home_ModState extends State<Home_Mod>
     _fetchData();
     _isMounted = true;
     _fetchWordUsageData();
+    _setupStreams();
   }
 
   @override
@@ -126,6 +128,115 @@ class _Home_ModState extends State<Home_Mod>
     _tabController.dispose();
     super.dispose();
   }
+
+  void _setupStreams() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+
+    _boardStream = FirebaseFirestore.instance
+        .collection('board')
+        .where('ownerID', isEqualTo: user.email)
+        .snapshots();
+
+    _boardStream.listen((boardSnapshot) {
+      for (var boardDoc in boardSnapshot.docs) {
+        String boardId = boardDoc.id;
+        String boardName = boardDoc['name'] as String? ?? 'Unnamed Board';
+        _boardNames[boardId] = boardName;
+        _listenToWordChanges(boardId);
+      }
+      setState(() {});
+    });
+  }
+
+  void _listenToWordChanges(String boardId) {
+    FirebaseFirestore.instance
+        .collection('board')
+        .doc(boardId)
+        .collection('words')
+        .snapshots()
+        .listen((wordSnapshot) {
+      _updateWordCounts(boardId, wordSnapshot);
+    });
+  }
+
+  void _updateWordCounts(String boardId, QuerySnapshot wordSnapshot) {
+    _wordUsageCounts[boardId] = {};
+
+    for (var wordDoc in wordSnapshot.docs) {
+      if (wordDoc.id == 'placeholder') continue;
+
+      try {
+        Map<String, dynamic>? data = wordDoc.data() as Map<String, dynamic>?;
+        if (data == null) {
+          print('Warning: Document ${wordDoc.id} has null data');
+          continue;
+        }
+
+        int usageCount = data['usageCount'] as int? ?? 0;
+        String wordName = data['wordName'] as String? ?? 'Unreadable';
+        String wordCategory = data['wordCategory'] as String? ?? 'Uncategorized';
+
+        _wordUsageCounts[boardId]![wordName] = usageCount;
+
+        _updateWordLists(wordName, wordCategory, usageCount, boardId);
+      } catch (e) {
+        print('Error processing document ${wordDoc.id}: $e');
+      }
+    }
+
+    _recalculateTotals();
+  }
+
+
+  void _updateWordLists(String wordName, String wordCategory, int usageCount, String boardId) {
+    // Remove existing entries for this word
+    _mostUsedWords.removeWhere((word) => word['wordName'] == wordName);
+    _leastUsedWords.removeWhere((word) => word['wordName'] == wordName);
+
+    // Create new word entry
+    Map<String, dynamic> wordEntry = {
+      'wordName': wordName,
+      'wordCategory': wordCategory,
+      'totalUsage': usageCount,
+      'boardFrequencies': {boardId: usageCount},
+    };
+
+    // Add to appropriate list
+    if (usageCount >= 10) {
+      _mostUsedWords.add(wordEntry);
+    } else {
+      _leastUsedWords.add(wordEntry);
+    }
+
+    // Sort lists
+    _mostUsedWords.sort((a, b) => b['totalUsage'].compareTo(a['totalUsage']));
+    _leastUsedWords.sort((a, b) => a['totalUsage'].compareTo(b['totalUsage']));
+  }
+
+  void _recalculateTotals() {
+    int mostUsed = 0;
+    int leastUsed = 0;
+
+    _wordUsageCounts.forEach((boardId, words) {
+      words.forEach((wordId, count) {
+        if (count >= 10) {
+          mostUsed++;
+        } else {
+          leastUsed++;
+        }
+      });
+    });
+
+    if (mounted) {
+      setState(() {
+        _mostUsedWordsCount = mostUsed;
+        _leastUsedWordsCount = leastUsed;
+        _wordCount = mostUsed + leastUsed;
+      });
+    }
+  }
+
 
   void _cancelSubscription() {
     _boardSubscription?.cancel();
@@ -824,7 +935,6 @@ class _Home_ModState extends State<Home_Mod>
   }
 }
 
-// Replace the entire WordUsageDialog class with this updated version
 class WordUsageDialog extends StatefulWidget {
   final String title;
   final Stream<List<Map<String, dynamic>>> wordsStream;
