@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:gtext/gtext.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'WordUsage.dart'; // Import the WordUsage class and categories list
@@ -576,3 +576,4 @@ class _StatsWrdGraphs_WidgetState extends State<StatsWrdGraphs_Widget> {
     });
   }
 }
+*/
