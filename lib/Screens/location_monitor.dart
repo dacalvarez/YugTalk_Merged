@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'global_snackbar.dart';
 
@@ -66,9 +67,10 @@ class LocationMonitor {
   Map<String, DateTime> _lastNotificationTime = {};
   Timer? _backgroundTimer;
   Timer? _statsTimer;
-  final _statsController = StreamController<Map<String, Map<String, dynamic>>>.broadcast();
+  // final _statsController = StreamController<Map<String, Map<String, dynamic>>>.broadcast();
   Stream<String> get locationStream => _locationController.stream;
   Stream<Map<String, Map<String, dynamic>>> get statsStream => _statsController.stream;
+  final _statsController = BehaviorSubject<Map<String, Map<String, dynamic>>>();
 
   void _showNotification(String locationType, bool isInside) {
     DateTime now = DateTime.now();
@@ -140,9 +142,11 @@ class LocationMonitor {
     _startStatsUpdates();
   }
 
-  void _startStatsUpdates() {
+void _startStatsUpdates() {
     _statsTimer = Timer.periodic(Duration(seconds: 30), (timer) {
-      _statsController.add(getLocationStats());
+      if (!_statsController.isClosed) {
+        _statsController.add(getLocationStats());
+      }
     });
   }
 

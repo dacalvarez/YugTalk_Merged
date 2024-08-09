@@ -1,4 +1,4 @@
-//this is lex'
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -24,9 +24,9 @@ class _Home_ModState extends State<Home_Mod>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController editModePasswordController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController activityModePasswordController =
-  TextEditingController();
+      TextEditingController();
   bool _passwordVisible = false;
   List<WordUsage> wordUsages = generateDummyData();
   int _wordCount = 0;
@@ -73,7 +73,7 @@ class _Home_ModState extends State<Home_Mod>
 
         for (var wordDoc in wordsSnapshot.docs) {
           Map<String, dynamic> wordData =
-          wordDoc.data() as Map<String, dynamic>;
+              wordDoc.data() as Map<String, dynamic>;
 
           if (wordDoc.id == 'placeholder' || wordData['initialized'] == true) {
             continue;
@@ -147,7 +147,7 @@ class _Home_ModState extends State<Home_Mod>
 
     // Fetch location count
     final userSettingsRef =
-    FirebaseFirestore.instance.collection('userSettings').doc(user.email);
+        FirebaseFirestore.instance.collection('userSettings').doc(user.email);
     _userSettingsSubscription = userSettingsRef.snapshots().listen((snapshot) {
       if (snapshot.exists) {
         _updateLocationCount(snapshot.data());
@@ -379,9 +379,9 @@ class _Home_ModState extends State<Home_Mod>
 
   void _updateCounts(
       {int? boardCount,
-        int? wordCount,
-        int? locationCount,
-        int? activityCount}) {
+      int? wordCount,
+      int? locationCount,
+      int? activityCount}) {
     if (_isMounted) {
       setState(() {
         if (boardCount != null) _boardCount = boardCount;
@@ -415,10 +415,10 @@ class _Home_ModState extends State<Home_Mod>
           .get();
 
       QuerySnapshot<Map<String, dynamic>> guardianSnapshot =
-      await FirebaseFirestore.instance
-          .collection('guardian')
-          .where('password', isEqualTo: hashedPassword)
-          .get();
+          await FirebaseFirestore.instance
+              .collection('guardian')
+              .where('password', isEqualTo: hashedPassword)
+              .get();
 
       String userType;
       if (slpSnapshot.docs.isNotEmpty) {
@@ -525,7 +525,7 @@ class _Home_ModState extends State<Home_Mod>
             label,
             style: TextStyle(
                 fontSize:
-                Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0,
+                    Theme.of(context).textTheme.bodyLarge?.fontSize ?? 18.0,
                 fontWeight: FontWeight.bold),
           ),
         ],
@@ -669,29 +669,39 @@ class _Home_ModState extends State<Home_Mod>
   }
 
   void _showDetailsDialog(BuildContext context, String title, int count) {
-    Stream<List<Map<String, dynamic>>> wordStream = getWordUsageStream();
+    if (title == 'Locations') {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return LocationStatsDialog(title: title);
+        },
+      );
+    } else {
+      Stream<List<Map<String, dynamic>>> wordStream = getWordUsageStream();
 
-    Stream<List<Map<String, dynamic>>> filteredStream = wordStream.map((words) {
-      switch (title) {
-        case 'Most Used Words':
-          return words
-              .where((word) => (word['totalUsage'] as int? ?? 0) >= 10)
-              .toList();
-        case 'Least Used Words':
-          return words
-              .where((word) => (word['totalUsage'] as int? ?? 0) < 10)
-              .toList();
-        default:
-          return words;
-      }
-    });
+      Stream<List<Map<String, dynamic>>> filteredStream =
+          wordStream.map((words) {
+        switch (title) {
+          case 'Most Used Words':
+            return words
+                .where((word) => (word['totalUsage'] as int? ?? 0) >= 10)
+                .toList();
+          case 'Least Used Words':
+            return words
+                .where((word) => (word['totalUsage'] as int? ?? 0) < 10)
+                .toList();
+          default:
+            return words;
+        }
+      });
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return WordUsageDialog(title: title, wordsStream: filteredStream);
-      },
-    );
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return WordUsageDialog(title: title, wordsStream: filteredStream);
+        },
+      );
+    }
   }
 
   Future<List<Map<String, dynamic>>> _fetchLocationsData() async {
@@ -706,7 +716,7 @@ class _Home_ModState extends State<Home_Mod>
     if (!userSettingsSnapshot.exists) return [];
 
     Map<String, dynamic> data =
-    userSettingsSnapshot.data() as Map<String, dynamic>;
+        userSettingsSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> userLocations = data['userLocations'] ?? {};
 
     List<Map<String, dynamic>> locations = [];
@@ -811,7 +821,7 @@ class _Home_ModState extends State<Home_Mod>
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
           icon:
-          Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
+              Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
           onPressed: () {
             setState(() {
               _passwordVisible = !_passwordVisible;
@@ -854,7 +864,7 @@ class _WordUsageDialogState extends State<WordUsageDialog> {
       bool matchesBoard = _selectedBoard == null ||
           _selectedBoard == 'All' ||
           ((word['boardFrequencies'] as Map<dynamic, dynamic>?)
-              ?.containsKey(_selectedBoard) ??
+                  ?.containsKey(_selectedBoard) ??
               false);
       return matchesSearch && matchesCategory && matchesBoard;
     }).toList();
@@ -891,7 +901,7 @@ class _WordUsageDialogState extends State<WordUsageDialog> {
               'All',
               ...words.expand((w) {
                 var boardFreqs =
-                w['boardFrequencies'] as Map<dynamic, dynamic>?;
+                    w['boardFrequencies'] as Map<dynamic, dynamic>?;
                 return boardFreqs?.keys.map((k) => k.toString()) ?? <String>[];
               })
             };
@@ -957,33 +967,33 @@ class _WordUsageDialogState extends State<WordUsageDialog> {
                   child: filteredWords.isEmpty
                       ? Center(child: GText('No data available'))
                       : SingleChildScrollView(
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: GText('Word')),
-                        DataColumn(label: GText('Category')),
-                        DataColumn(label: GText('Boards & Frequencies')),
-                        DataColumn(label: GText('Total Usage')),
-                      ],
-                      rows: filteredWords.map((word) {
-                        List<String> boardFrequencies =
-                            (word['boardFrequencies']
-                            as Map<dynamic, dynamic>?)
-                                ?.entries
-                                .map((e) => '${e.key}: ${e.value}')
-                                .toList() ??
-                                [];
-                        return DataRow(
-                          cells: [
-                            DataCell(GText(word['wordName'] ?? '')),
-                            DataCell(GText(word['wordCategory'] ?? '')),
-                            DataCell(GText(boardFrequencies.join('\n'))),
-                            DataCell(GText(
-                                word['totalUsage']?.toString() ?? '0')),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: GText('Word')),
+                              DataColumn(label: GText('Category')),
+                              DataColumn(label: GText('Boards & Frequencies')),
+                              DataColumn(label: GText('Total Usage')),
+                            ],
+                            rows: filteredWords.map((word) {
+                              List<String> boardFrequencies =
+                                  (word['boardFrequencies']
+                                              as Map<dynamic, dynamic>?)
+                                          ?.entries
+                                          .map((e) => '${e.key}: ${e.value}')
+                                          .toList() ??
+                                      [];
+                              return DataRow(
+                                cells: [
+                                  DataCell(GText(word['wordName'] ?? '')),
+                                  DataCell(GText(word['wordCategory'] ?? '')),
+                                  DataCell(GText(boardFrequencies.join('\n'))),
+                                  DataCell(GText(
+                                      word['totalUsage']?.toString() ?? '0')),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
                 ),
               ],
             );
@@ -1131,9 +1141,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         .listen((snapshot) {
       if (snapshot.exists) {
         final userLocations =
-        snapshot.data()?['userLocations'] as Map<String, dynamic>?;
+            snapshot.data()?['userLocations'] as Map<String, dynamic>?;
         final locationCounters =
-        snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
+            snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
         if (userLocations != null && locationCounters != null) {
           _processLocationData(userLocations, locationCounters);
         }
@@ -1297,81 +1307,81 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         child: _isLoading
             ? Center(child: CircularProgressIndicator())
             : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GText(
-              widget.title,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GText(
+                    widget.title,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            labelText: 'Search',
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              _popupSearchQuery = value;
+                              _filterItems();
+                            });
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: DropdownButton<String>(
+                          value: _selectedFilter,
+                          hint: GText(widget.title == 'Locations'
+                              ? 'Location Type'
+                              : 'Category'),
+                          isExpanded: true,
+                          items: filterOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: GText(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedFilter = newValue;
+                              _filterItems();
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: PaginatedDataTable(
+                        columns: _getColumns(),
+                        source:
+                            _DataSource(context, _filteredItems, widget.title),
+                        rowsPerPage: _rowsPerPage,
+                        onRowsPerPageChanged: (value) {
+                          setState(() {
+                            _rowsPerPage = value!;
+                          });
+                        },
+                        availableRowsPerPage: [10, 25, 50],
+                        sortColumnIndex: _currentSortColumn,
+                        sortAscending: _isAscending,
+                        dataRowMaxHeight:
+                            (_DataSource(context, _filteredItems, widget.title)
+                                .rowHeight),
+                      ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _popupSearchQuery = value;
-                        _filterItems();
-                      });
-                    },
                   ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  flex: 1,
-                  child: DropdownButton<String>(
-                    value: _selectedFilter,
-                    hint: GText(widget.title == 'Locations'
-                        ? 'Location Type'
-                        : 'Category'),
-                    isExpanded: true,
-                    items: filterOptions.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: GText(value),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedFilter = newValue;
-                        _filterItems();
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                child: PaginatedDataTable(
-                  columns: _getColumns(),
-                  source:
-                  _DataSource(context, _filteredItems, widget.title),
-                  rowsPerPage: _rowsPerPage,
-                  onRowsPerPageChanged: (value) {
-                    setState(() {
-                      _rowsPerPage = value!;
-                    });
-                  },
-                  availableRowsPerPage: [10, 25, 50],
-                  sortColumnIndex: _currentSortColumn,
-                  sortAscending: _isAscending,
-                  dataRowMaxHeight:
-                  (_DataSource(context, _filteredItems, widget.title)
-                      .rowHeight),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1386,9 +1396,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) => _sort<String>(
-                  (item) => item['wordCategory'], columnIndex, ascending),
+              (item) => item['wordCategory'], columnIndex, ascending),
         ),
         DataColumn(
           label: GText('Boards', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1404,9 +1414,9 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) => _sort<String>(
-                  (item) => item['wordCategory'], columnIndex, ascending),
+              (item) => item['wordCategory'], columnIndex, ascending),
         ),
         DataColumn(
           label: GText('Boards & Frequencies',
@@ -1428,7 +1438,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
         ),
         DataColumn(
           label:
-          GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+              GText('Category', style: TextStyle(fontWeight: FontWeight.bold)),
           onSort: (columnIndex, ascending) =>
               _sort<String>((item) => item['category'], columnIndex, ascending),
         ),
@@ -1439,7 +1449,7 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           label: Container(
             width: 600,
             child:
-            GText('Address', style: TextStyle(fontWeight: FontWeight.bold)),
+                GText('Address', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           onSort: (columnIndex, ascending) =>
               _sort<String>((item) => item['address'], columnIndex, ascending),
@@ -1542,5 +1552,161 @@ class _DataSource extends DataTableSource {
   String _formatBoards(Map<dynamic, dynamic>? boardFrequencies) {
     if (boardFrequencies == null) return '';
     return boardFrequencies.keys.join(', ');
+  }
+}
+
+class LocationStatsDialog extends StatefulWidget {
+  final String title;
+
+  const LocationStatsDialog({Key? key, required this.title}) : super(key: key);
+
+  @override
+  _LocationStatsDialogState createState() => _LocationStatsDialogState();
+}
+
+class _LocationStatsDialogState extends State<LocationStatsDialog> {
+  String _searchQuery = '';
+  String _selectedLocationType = 'All';
+  List<Map<String, dynamic>> _locations = [];
+  bool _isLoading = true;
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToLocationData();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _subscribeToLocationData() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+
+    _subscription = FirebaseFirestore.instance
+        .collection('userSettings')
+        .doc(user.email)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final userLocations =
+            snapshot.data()?['userLocations'] as Map<String, dynamic>?;
+        if (userLocations != null) {
+          _processLocationData(userLocations);
+        }
+      }
+    });
+  }
+
+  void _processLocationData(Map<String, dynamic> userLocations) {
+    List<Map<String, dynamic>> locationData = [];
+
+    userLocations.forEach((key, value) {
+      String decodedValue = utf8.decode(base64.decode(value));
+      List<dynamic> decodedJson = jsonDecode(decodedValue);
+      for (var location in decodedJson) {
+        locationData.add({
+          'address': location['address'],
+          'type': key,
+          'latitude': location['latitude'],
+          'longitude': location['longitude'],
+        });
+      }
+    });
+
+    setState(() {
+      _locations = locationData;
+      _isLoading = false;
+    });
+  }
+
+  List<Map<String, dynamic>> _getFilteredLocations() {
+    return _locations.where((location) {
+      bool matchesSearch = location['address']
+          .toString()
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      bool matchesType = _selectedLocationType == 'All' ||
+          location['type'] == _selectedLocationType;
+      return matchesSearch && matchesType;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredLocations = _getFilteredLocations();
+
+    return Dialog(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GText("${widget.title} (${filteredLocations.length})",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Search',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 16),
+                DropdownButton<String>(
+                  value: _selectedLocationType,
+                  items:
+                      ['All', 'Home', 'School', 'Clinic'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: GText(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedLocationType = newValue!;
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : filteredLocations.isEmpty
+                      ? Center(child: GText('No locations found'))
+                      : ListView.builder(
+                          itemCount: filteredLocations.length,
+                          itemBuilder: (context, index) {
+                            final location = filteredLocations[index];
+                            return ListTile(
+                              title: GText(location['address']),
+                              subtitle: GText('Type: ${location['type']}'),
+                              trailing: GText(
+                                  '${location['latitude']}, ${location['longitude']}'),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

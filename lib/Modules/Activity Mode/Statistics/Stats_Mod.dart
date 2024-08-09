@@ -24,17 +24,23 @@ class Stats_Mod extends StatelessWidget {
     int leastUsedCount = wordUsages.length - mostUsedCount;
 
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GeneralStats(wordUsages: wordUsages, activityForms: activityForms),
-            const SizedBox(height: 15),
-            MostUsedWordsStats(),
-            const SizedBox(height: 25),
-            ActivitiesStats(activityForms: activityForms),
-            const SizedBox(height: 25),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GeneralStats(
+                    wordUsages: wordUsages, activityForms: activityForms),
+                const SizedBox(height: 20),
+                MostUsedWordsStats(),
+                const SizedBox(height: 20),
+                ActivitiesStats(activityForms: activityForms),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -121,8 +127,9 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
         }
 
         int usageCount = data['usageCount'] as int? ?? 0;
-        String wordName =  data['wordName'] as String? ?? 'Unreadable';
-        String wordCategory = data['wordCategory'] as String? ?? 'Uncategorized';
+        String wordName = data['wordName'] as String? ?? 'Unreadable';
+        String wordCategory =
+            data['wordCategory'] as String? ?? 'Uncategorized';
 
         _wordUsageCounts[boardId]![wordName] = usageCount;
 
@@ -135,7 +142,8 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
     _recalculateTotals();
   }
 
-  void _updateWordLists(String wordName, String wordCategory, int usageCount, String boardId) {
+  void _updateWordLists(
+      String wordName, String wordCategory, int usageCount, String boardId) {
     // Remove existing entries for this word
     _mostUsedWords.removeWhere((word) => word['wordName'] == wordName);
     _leastUsedWords.removeWhere((word) => word['wordName'] == wordName);
@@ -182,9 +190,9 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
       });
     }
 
-    print('Updated counts - Most Used: $_mostUsedWordsCount, Least Used: $_leastUsedWordsCount');
+    print(
+        'Updated counts - Most Used: $_mostUsedWordsCount, Least Used: $_leastUsedWordsCount');
   }
-
 
   @override
   void dispose() {
@@ -356,7 +364,9 @@ class _MostUsedWordsStatsState extends State<MostUsedWordsStats> {
                               cells: [
                                 DataCell(Text(word['wordName'] as String)),
                                 DataCell(Text(word['wordCategory'] as String)),
-                                DataCell(Text(_formatBoardFrequencies(word['boardFrequencies'] as Map<String, int>))),
+                                DataCell(Text(_formatBoardFrequencies(
+                                    word['boardFrequencies']
+                                        as Map<String, int>))),
                                 DataCell(Text(word['totalUsage'].toString())),
                               ],
                             ))
@@ -1205,8 +1215,10 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
           return;
         }
         if (snapshot.exists) {
-          final userLocations = snapshot.data()?['userLocations'] as Map<String, dynamic>?;
-          final locationCounters = snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
+          final userLocations =
+              snapshot.data()?['userLocations'] as Map<String, dynamic>?;
+          final locationCounters =
+              snapshot.data()?['locationCounters'] as Map<String, dynamic>?;
           if (userLocations != null && locationCounters != null) {
             _processLocationData(userLocations, locationCounters);
           }
@@ -1233,7 +1245,8 @@ class _GeneralStatsDialogState extends State<GeneralStatsDialog> {
     );
   }
 
-  void _processLocationData(Map<String, dynamic> userLocations, Map<String, dynamic> locationCounters) {
+  void _processLocationData(Map<String, dynamic> userLocations,
+      Map<String, dynamic> locationCounters) {
     List<Map<String, dynamic>> locationData = [];
 
     userLocations.forEach((locationType, encodedLocations) {

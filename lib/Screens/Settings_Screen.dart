@@ -47,7 +47,10 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   GText(
                     'General',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -81,10 +84,12 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
                         _buildSettingTile(
-                          DropdownTile(title: 'Font Size', settingKey: 'fontSize'),
+                          DropdownTile(
+                              title: 'Font Size', settingKey: 'fontSize'),
                         ),
                         _buildSettingTile(
-                          SwitchTile(title: 'Dark Mode', settingKey: 'DarkMode'),
+                          SwitchTile(
+                              title: 'Dark Mode', settingKey: 'DarkMode'),
                         ),
                       ],
                     ),
@@ -153,7 +158,7 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
           .snapshots(),
       builder: (context, snapshot) {
         Map<String, dynamic>? settingsData =
-        snapshot.data?.data() as Map<String, dynamic>?;
+            snapshot.data?.data() as Map<String, dynamic>?;
 
         if (settingsData != null && settingsData[widget.settingKey] != null) {
           _value = settingsData[widget.settingKey];
@@ -184,7 +189,8 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
                 padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
                 child: Row(
                   children: [
-                    GText('Set Location for: ',
+                    GText(
+                      'Set Location for: ',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 10),
@@ -252,7 +258,6 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
     }
   }
 
-
   void _updateFirebase(bool value) {
     FirebaseFirestore.instance
         .collection('userSettings')
@@ -268,7 +273,8 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: GText('Disable ${widget.title} Permission'),
-          content: GText('To fully disable the ${widget.title} permission, you need to do this in your device settings. Would you like to open settings now?'),
+          content: GText(
+              'To fully disable the ${widget.title} permission, you need to do this in your device settings. Would you like to open settings now?'),
           actions: <Widget>[
             TextButton(
               child: GText('Cancel'),
@@ -299,7 +305,8 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: GText('Disable ${widget.title} Permission'),
-          content: GText('To disable the ${widget.title} permission, you need to do this in your iOS settings. Would you like to open settings now?'),
+          content: GText(
+              'To disable the ${widget.title} permission, you need to do this in your iOS settings. Would you like to open settings now?'),
           actions: <Widget>[
             TextButton(
               child: GText('Cancel'),
@@ -330,7 +337,8 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: GText('Permission Denied'),
-          content: GText('${widget.title} permission is required for this feature. Please grant the permission in app settings.'),
+          content: GText(
+              '${widget.title} permission is required for this feature. Please grant the permission in app settings.'),
           actions: <Widget>[
             TextButton(
               child: GText('OK'),
@@ -365,7 +373,8 @@ class _PermissionSwitchTileState extends State<PermissionSwitchTile> {
 class LocationDialog extends StatefulWidget {
   final String locationType;
 
-  const LocationDialog({Key? key, required this.locationType}) : super(key: key);
+  const LocationDialog({Key? key, required this.locationType})
+      : super(key: key);
 
   @override
   _LocationDialogState createState() => _LocationDialogState();
@@ -409,14 +418,17 @@ class _LocationDialogState extends State<LocationDialog> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  Map<String, dynamic>? data = snapshot.data?.data() as Map<String, dynamic>?;
-                  String? encodedLocation = data?['userLocations']?[widget.locationType];
+                  Map<String, dynamic>? data =
+                      snapshot.data?.data() as Map<String, dynamic>?;
+                  String? encodedLocation =
+                      data?['userLocations']?[widget.locationType];
 
                   if (encodedLocation == null) {
                     return Center(child: GText('No locations found.'));
                   }
 
-                  List<Map<String, dynamic>> locations = _decodeLocations(encodedLocation);
+                  List<Map<String, dynamic>> locations =
+                      _decodeLocations(encodedLocation);
 
                   return FutureBuilder<List<Map<String, dynamic>>>(
                     future: _fetchAddresses(locations),
@@ -425,24 +437,28 @@ class _LocationDialogState extends State<LocationDialog> {
                         return const Center(child: CircularProgressIndicator());
                       }
 
-                      List<Map<String, dynamic>> locationsWithAddresses = addressSnapshot.data!;
+                      List<Map<String, dynamic>> locationsWithAddresses =
+                          addressSnapshot.data!;
 
                       return ListView.builder(
                         shrinkWrap: true,
                         itemCount: locationsWithAddresses.length,
                         itemBuilder: (context, index) {
                           return ListTile(
-                            title: Text(locationsWithAddresses[index]['address']),
+                            title:
+                                Text(locationsWithAddresses[index]['address']),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.edit),
-                                  onPressed: () => _editLocation(context, widget.locationType, index),
+                                  onPressed: () => _editLocation(
+                                      context, widget.locationType, index),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete),
-                                  onPressed: () => _deleteLocation(context, widget.locationType, index),
+                                  onPressed: () => _deleteLocation(
+                                      context, widget.locationType, index),
                                 ),
                               ],
                             ),
@@ -467,17 +483,20 @@ class _LocationDialogState extends State<LocationDialog> {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _fetchAddresses(List<Map<String, dynamic>> locations) async {
+  Future<List<Map<String, dynamic>>> _fetchAddresses(
+      List<Map<String, dynamic>> locations) async {
     List<Map<String, dynamic>> locationsWithAddresses = [];
     for (var location in locations) {
-      String address = await _getAddressFromLatLng(LatLng(location['latitude'], location['longitude']));
+      String address = await _getAddressFromLatLng(
+          LatLng(location['latitude'], location['longitude']));
       locationsWithAddresses.add({...location, 'address': address});
     }
     return locationsWithAddresses;
   }
 
   Future<String> _getAddressFromLatLng(LatLng position) async {
-    final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1';
+    final url =
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1';
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
@@ -497,7 +516,8 @@ class _LocationDialogState extends State<LocationDialog> {
     );
   }
 
-  void _editLocation(BuildContext context, String locationType, int index) async {
+  void _editLocation(
+      BuildContext context, String locationType, int index) async {
     DocumentSnapshot doc = await FirebaseFirestore.instance
         .collection('userSettings')
         .doc(FirebaseAuth.instance.currentUser!.email)
@@ -523,7 +543,8 @@ class _LocationDialogState extends State<LocationDialog> {
     );
   }
 
-  void _deleteLocation(BuildContext context, String locationType, int index) async {
+  void _deleteLocation(
+      BuildContext context, String locationType, int index) async {
     DocumentSnapshot doc = await FirebaseFirestore.instance
         .collection('userSettings')
         .doc(FirebaseAuth.instance.currentUser!.email)
@@ -574,12 +595,12 @@ Map<String, dynamic> decodeLocationData(String encodedData) {
 
 Future<LatLng?> geocodeAddress(String address) async {
   final encodedAddress = Uri.encodeComponent(address);
-  final url = 'https://nominatim.openstreetmap.org/search?format=json&q=$encodedAddress';
+  final url =
+      'https://nominatim.openstreetmap.org/search?format=json&q=$encodedAddress';
 
   try {
-    final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'YugTalk/1.0'
-    });
+    final response =
+        await http.get(Uri.parse(url), headers: {'User-Agent': 'YugTalk/1.0'});
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -618,10 +639,12 @@ class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
+  bool _isMounted = false;
 
   @override
   void initState() {
     super.initState();
+    _isMounted = true;
     if (widget.initialLocation != null) {
       _center = widget.initialLocation;
       _markerPosition = widget.initialLocation;
@@ -631,7 +654,15 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _isMounted = false;
+    super.dispose();
+  }
+
   Future<void> _getCurrentLocation() async {
+    if (!_isMounted) return;
+
     setState(() => _isLoading = true);
 
     try {
@@ -651,6 +682,8 @@ class _MapScreenState extends State<MapScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      if (!_isMounted) return;
+
       setState(() {
         _center = LatLng(position.latitude, position.longitude);
         _markerPosition = _center;
@@ -658,49 +691,58 @@ class _MapScreenState extends State<MapScreen> {
       });
     } catch (e) {
       print('Error getting location: $e');
+      if (!_isMounted) return;
+
       setState(() {
         _center = LatLng(0, 0);
         _markerPosition = _center;
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: GText('Unable to get current location. Using default.')),
-      );
+      if (_isMounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: GText('Unable to get current location. Using default.')),
+        );
+      }
     }
   }
 
   Future<void> _performSearch() async {
+    if (!_isMounted) return;
+
     final query = _searchController.text;
     if (query.isNotEmpty) {
       try {
         final location = await geocodeAddress(query);
-        if (location != null) {
+        if (location != null && _isMounted) {
           setState(() {
             _center = location;
             _markerPosition = location;
             _mapController.move(location, 13.0);
           });
-        } else {
+        } else if (_isMounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: GText('Location not found')),
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GText('An error occurred while searching: $e')),
-        );
+        if (_isMounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: GText('An error occurred while searching: $e')),
+          );
+        }
       }
     }
   }
 
   Future<LatLng?> geocodeAddress(String address) async {
     final encodedAddress = Uri.encodeComponent(address);
-    final url = 'https://nominatim.openstreetmap.org/search?format=json&q=$encodedAddress';
+    final url =
+        'https://nominatim.openstreetmap.org/search?format=json&q=$encodedAddress';
 
     try {
-      final response = await http.get(Uri.parse(url), headers: {
-        'User-Agent': 'YugTalk/1.0'
-      });
+      final response = await http
+          .get(Uri.parse(url), headers: {'User-Agent': 'YugTalk/1.0'});
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -757,14 +799,17 @@ class _MapScreenState extends State<MapScreen> {
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: GText('${widget.locationType} location saved successfully')),
+          SnackBar(
+              content:
+                  GText('${widget.locationType} location saved successfully')),
         );
       });
     }
   }
 
   Future<String> _getAddressFromLatLng(LatLng position) async {
-    final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1';
+    final url =
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=18&addressdetails=1';
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
@@ -797,81 +842,88 @@ class _MapScreenState extends State<MapScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Stack(
-          children: [
-            FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                center: _center,
-                zoom: 13.0,
-                onTap: (_, point) {
-                  setState(() {
-                    _markerPosition = point;
-                  });
-                },
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c'],
-                ),
-                MarkerLayer(
-                  markers: [
-                    if (_markerPosition != null)
-                      Marker(
-                        width: 80.0,
-                        height: 80.0,
-                        point: _markerPosition!,
-                        builder: (ctx) => const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 40.0,
-                        ),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: Stack(
+                children: [
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      center: _center,
+                      zoom: 13.0,
+                      onTap: (_, point) {
+                        setState(() {
+                          _markerPosition = point;
+                        });
+                      },
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        subdomains: const ['a', 'b', 'c'],
                       ),
-                  ],
-                ),
-              ],
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: '     Search for a location',
-                  hintStyle: TextStyle(
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      MarkerLayer(
+                        markers: [
+                          if (_markerPosition != null)
+                            Marker(
+                              width: 80.0,
+                              height: 80.0,
+                              point: _markerPosition!,
+                              builder: (ctx) => const Icon(
+                                Icons.location_on,
+                                color: Colors.red,
+                                size: 40.0,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
-                    onPressed: _performSearch,
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: '     Search for a location',
+                        hintStyle: TextStyle(
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.search,
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600]),
+                          onPressed: _performSearch,
+                        ),
+                        filled: true,
+                        fillColor:
+                            isDarkMode ? Colors.grey[900] : Colors.grey[100],
+                      ),
+                      style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black),
+                      onSubmitted: (_) => _performSearch(),
+                    ),
                   ),
-                  filled: true,
-                  fillColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
-                ),
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                onSubmitted: (_) => _performSearch(),
+                  Positioned(
+                    bottom: 15,
+                    left: 200,
+                    right: 200,
+                    child: ElevatedButton(
+                      onPressed: _saveLocation,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: GText('Save Location'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            Positioned(
-              bottom: 15,
-              left: 200,
-              right: 200,
-              child: ElevatedButton(
-                onPressed: _saveLocation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                ),
-                child: GText('Save Location'),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -880,7 +932,8 @@ class SwitchTile extends StatefulWidget {
   final String title;
   final String settingKey;
 
-  const SwitchTile({Key? key, required this.title, required this.settingKey}) : super(key: key);
+  const SwitchTile({Key? key, required this.title, required this.settingKey})
+      : super(key: key);
 
   @override
   _SwitchTileState createState() => _SwitchTileState();
@@ -892,9 +945,13 @@ class _SwitchTileState extends State<SwitchTile> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(FirebaseAuth.instance.currentUser!.email)
+          .snapshots(),
       builder: (context, snapshot) {
-        Map<String, dynamic>? settingsData = snapshot.data?.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? settingsData =
+            snapshot.data?.data() as Map<String, dynamic>?;
 
         if (settingsData != null && settingsData[widget.settingKey] != null) {
           _value = settingsData[widget.settingKey];
@@ -909,7 +966,10 @@ class _SwitchTileState extends State<SwitchTile> {
               _value = value;
             });
 
-            FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).set({
+            FirebaseFirestore.instance
+                .collection('userSettings')
+                .doc(FirebaseAuth.instance.currentUser!.email)
+                .set({
               widget.settingKey: _value,
             }, SetOptions(merge: true));
           },
@@ -923,7 +983,9 @@ class LanguageSwitchTile extends StatefulWidget {
   final String title;
   final String settingKey;
 
-  const LanguageSwitchTile({Key? key, required this.title, required this.settingKey}) : super(key: key);
+  const LanguageSwitchTile(
+      {Key? key, required this.title, required this.settingKey})
+      : super(key: key);
 
   @override
   _LanguageSwitchTileState createState() => _LanguageSwitchTileState();
@@ -935,9 +997,13 @@ class _LanguageSwitchTileState extends State<LanguageSwitchTile> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(FirebaseAuth.instance.currentUser!.email)
+          .snapshots(),
       builder: (context, snapshot) {
-        Map<String, dynamic>? settingsData = snapshot.data?.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? settingsData =
+            snapshot.data?.data() as Map<String, dynamic>?;
 
         if (settingsData != null && settingsData[widget.settingKey] != null) {
           _value = settingsData[widget.settingKey];
@@ -948,8 +1014,10 @@ class _LanguageSwitchTileState extends State<LanguageSwitchTile> {
             children: [
               GText(widget.title),
               const SizedBox(width: 10),
-              if (_value) GText('Tagalog', style: TextStyle(color: Colors.green)),
-              if (!_value) GText('English', style: TextStyle(color: Colors.green)),
+              if (_value)
+                GText('Tagalog', style: TextStyle(color: Colors.green)),
+              if (!_value)
+                GText('English', style: TextStyle(color: Colors.green)),
             ],
           ),
           contentPadding: EdgeInsets.zero,
@@ -959,7 +1027,10 @@ class _LanguageSwitchTileState extends State<LanguageSwitchTile> {
               _value = value;
             });
 
-            FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).set({
+            FirebaseFirestore.instance
+                .collection('userSettings')
+                .doc(FirebaseAuth.instance.currentUser!.email)
+                .set({
               widget.settingKey: _value,
             }, SetOptions(merge: true));
           },
@@ -973,7 +1044,8 @@ class DropdownTile extends StatefulWidget {
   final String title;
   final String settingKey;
 
-  const DropdownTile({Key? key, required this.title, required this.settingKey}) : super(key: key);
+  const DropdownTile({Key? key, required this.title, required this.settingKey})
+      : super(key: key);
 
   @override
   _DropdownTileState createState() => _DropdownTileState();
@@ -985,9 +1057,13 @@ class _DropdownTileState extends State<DropdownTile> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('userSettings')
+          .doc(FirebaseAuth.instance.currentUser!.email)
+          .snapshots(),
       builder: (context, snapshot) {
-        Map<String, dynamic>? settingsData = snapshot.data?.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? settingsData =
+            snapshot.data?.data() as Map<String, dynamic>?;
 
         if (settingsData != null && settingsData[widget.settingKey] != null) {
           _selectedValue = settingsData[widget.settingKey];
@@ -1003,18 +1079,23 @@ class _DropdownTileState extends State<DropdownTile> {
                 _selectedValue = value!;
               });
 
-              FirebaseFirestore.instance.collection('userSettings').doc(FirebaseAuth.instance.currentUser!.email).set({
+              FirebaseFirestore.instance
+                  .collection('userSettings')
+                  .doc(FirebaseAuth.instance.currentUser!.email)
+                  .set({
                 widget.settingKey: _selectedValue,
               }, SetOptions(merge: true));
             },
             items: ['Small', 'Medium', 'Large']
                 .map((size) => DropdownMenuItem(
-              value: size,
-              child: GText(
-                size,
-                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
-              ),
-            ))
+                      value: size,
+                      child: GText(
+                        size,
+                        style: TextStyle(
+                            color:
+                                Theme.of(context).textTheme.bodyLarge?.color),
+                      ),
+                    ))
                 .toList(),
           ),
         );

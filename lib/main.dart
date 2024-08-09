@@ -43,21 +43,22 @@ void main() async {
   );
 
   // Initialize background fetch
-  BackgroundFetch.configure(BackgroundFetchConfig(
-      minimumFetchInterval: 1,
-      stopOnTerminate: false,
-      enableHeadless: true,
-      requiresBatteryNotLow: false,
-      requiresCharging: false,
-      requiresStorageNotLow: false,
-      requiresDeviceIdle: false,
-      requiredNetworkType: NetworkType.NONE
-  ), (String taskId) async {
+  BackgroundFetch.configure(
+      BackgroundFetchConfig(
+          minimumFetchInterval: 1,
+          stopOnTerminate: false,
+          enableHeadless: true,
+          requiresBatteryNotLow: false,
+          requiresCharging: false,
+          requiresStorageNotLow: false,
+          requiresDeviceIdle: false,
+          requiredNetworkType: NetworkType.NONE), (String taskId) async {
     // Get location and update Firestore here
     LocationMonitor locationMonitor = LocationMonitor();
     await locationMonitor.startMonitoring();
     Position position = await Geolocator.getCurrentPosition();
-    locationMonitor.checkLocation(LatLng(position.latitude, position.longitude));
+    locationMonitor
+        .checkLocation(LatLng(position.latitude, position.longitude));
     await locationMonitor.stopMonitoring();
     BackgroundFetch.finish(taskId);
   });
@@ -237,7 +238,8 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
             final bool isDarkMode = data['DarkMode'] ?? false;
             final bool isTagalog = data['languagePreference'] ?? true;
 
-            final Map<String, dynamic> userLocations = data['userLocations'] ?? {};
+            final Map<String, dynamic> userLocations =
+                data['userLocations'] ?? {};
             if (userLocations.isNotEmpty) {
               _locationMonitor.updateLocations(userLocations);
             }
@@ -334,8 +336,9 @@ class _UserSettingsWrapperState extends State<UserSettingsWrapper> {
                 ),
               ),
               themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-              home: widget.user.emailVerified ?
-              const Home_Mod() : const Verification_Widget(),
+              home: widget.user.emailVerified
+                  ? const Home_Mod()
+                  : const Verification_Widget(),
             );
           },
         );

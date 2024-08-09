@@ -68,17 +68,21 @@ class _DrawerWidgetState extends State<DrawerWidget> {
             .doc(FirebaseAuth.instance.currentUser!.email)
             .get();
 
-        Map<String, dynamic>? data = settingsDoc.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? data =
+            settingsDoc.data() as Map<String, dynamic>?;
         Map<String, dynamic>? userLocations = data?['userLocations'];
 
         if (userLocations != null) {
           for (String locationType in ['Home', 'School', 'Clinic']) {
             String? encodedLocation = userLocations[locationType];
             if (encodedLocation != null) {
-              List<Map<String, dynamic>> locations = _decodeLocations(encodedLocation);
+              List<Map<String, dynamic>> locations =
+                  _decodeLocations(encodedLocation);
               for (var location in locations) {
-                LatLng savedLocation = LatLng(location['latitude'], location['longitude']);
-                double distance = calculateDistance(currentPosition, savedLocation);
+                LatLng savedLocation =
+                    LatLng(location['latitude'], location['longitude']);
+                double distance =
+                    calculateDistance(currentPosition, savedLocation);
                 if (distance <= 250) {
                   return locationType;
                 }
@@ -87,7 +91,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
           }
         }
 
-        return 'Outside';
+        return 'Home';
       } catch (e) {
         return null;
       }
@@ -154,12 +158,18 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                             .snapshots(),
                         builder: (context, settingsSnapshot) {
                           if (settingsSnapshot.hasData) {
-                            Map<String, dynamic>? data = settingsSnapshot.data?.data() as Map<String, dynamic>?;
-                            bool locationPermission = data?['locationPermission'] ?? false;
-                            Map<String, dynamic>? userLocations = data?['userLocations'];
-                            bool hasLocations = userLocations != null && userLocations.isNotEmpty;
+                            Map<String, dynamic>? data = settingsSnapshot.data
+                                ?.data() as Map<String, dynamic>?;
+                            bool locationPermission =
+                                data?['locationPermission'] ?? false;
+                            Map<String, dynamic>? userLocations =
+                                data?['userLocations'];
+                            bool hasLocations = userLocations != null &&
+                                userLocations.isNotEmpty;
 
-                            if (_showLocation && locationPermission && hasLocations) {
+                            if (_showLocation &&
+                                locationPermission &&
+                                hasLocations) {
                               return Column(
                                 children: [
                                   const SizedBox(height: 10),
@@ -173,12 +183,15 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                                         ),
                                       ),
                                       const SizedBox(width: 4),
-                                      if (snapshot.connectionState == ConnectionState.waiting)
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting)
                                         const SizedBox(
                                           width: 20,
                                           height: 20,
                                           child: CircularProgressIndicator(
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
                                             strokeWidth: 2,
                                           ),
                                         )
@@ -215,14 +228,16 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                   onTap: () {
                     if (_isCurrentRoute(context, Home_Mod.routeName)) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: GText("You're already at home")),
+                        const SnackBar(
+                            content: GText("You're already at home")),
                       );
                     } else {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const Home_Mod(),
-                          settings: const RouteSettings(name: Home_Mod.routeName),
+                          settings:
+                              const RouteSettings(name: Home_Mod.routeName),
                         ),
                       );
                     }
@@ -232,7 +247,10 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                   leading: const Icon(Icons.account_circle),
                   title: GText('My Account'),
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => AccountScreen()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => AccountScreen()));
                   },
                 ),
                 ListTile(
@@ -253,7 +271,10 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                   leading: const Icon(Icons.info),
                   title: GText('About Us'),
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => AboutUsScreen()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => AboutUsScreen()));
                   },
                 ),
               ],
@@ -271,7 +292,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
                   MaterialPageRoute(
                     builder: (context) => const Authentication_Mod(),
                   ),
-                      (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
